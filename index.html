@@ -2,53 +2,71 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- CONFIGURAÇÕES DE APP PARA TELA INICIAL -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="L.A. Controle">
     <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#000000">
     
-    <title>L.A. CONTROLE V.19</title>
+    <title>L.A. CONTROLE V.20</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        :root { --orange: #f39c12; --dark: #000; --silver: #ecf0f1; }
-        body { margin: 0; font-family: -apple-system, sans-serif; background: var(--dark); color: white; overflow: hidden; height: 100vh; }
-        .bg { position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); z-index: 0; }
-        .container { display: flex; flex-direction: column; height: 100vh; padding: 20px; box-sizing: border-box; align-items: center; z-index: 1; position: relative;}
+        :root { --orange: #f39c12; --dark: #000; }
         
-        /* LOGIN */
-        #tela-login { justify-content: center; background: var(--dark); }
-        .login-box { width: 100%; max-width: 300px; text-align: center; }
-        .input-login { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.2rem; box-sizing: border-box; }
+        /* CORREÇÃO PARA TELA CORTADA NO CELULAR */
+        html, body { 
+            margin: 0; 
+            padding: 0; 
+            background: var(--dark); 
+            color: white; 
+            font-family: -apple-system, sans-serif;
+            height: 100%;
+            width: 100%;
+            overflow: hidden; 
+        }
 
-        .header { width: 100%; text-align: center; padding: 10px 0; }
-        .logo { height: 75px; filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4)); }
+        .bg { position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); z-index: 0; }
         
-        .selector { position: relative; width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;}
-        .car-visual { max-width: 90%; max-height: 180px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); animation: carPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        @keyframes carPop { 0% { transform: scale(0.2); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        /* CONTAINER DINÂMICO */
+        .container { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100dvh; /* Dynamic Viewport Height: resolve o corte das barras */
+            padding: 20px; 
+            box-sizing: border-box; 
+            align-items: center; 
+            z-index: 1; 
+            position: relative;
+        }
         
-        .driver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 20px; }
-        .driver-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
+        #tela-login { justify-content: center; }
+        .login-box { width: 100%; max-width: 300px; text-align: center; }
+        .input-login { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.1rem; box-sizing: border-box; }
+
+        .header { width: 100%; text-align: center; padding: 5px 0; }
+        .logo { height: 60px; filter: drop-shadow(0 0 10px rgba(243, 156, 18, 0.3)); }
+        
+        .selector { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden;}
+        .car-visual { max-width: 85%; max-height: 160px; filter: drop-shadow(0 10px 20px rgba(243, 156, 18, 0.4)); animation: carPop 0.6s ease-out; }
+        @keyframes carPop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .driver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin: 15px 0; }
+        .driver-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
         .driver-card.selected { border-color: var(--orange); background: rgba(243, 156, 18, 0.2); }
         input#outro-nome { background: none; border: 1px solid var(--orange); color: white; padding: 12px; border-radius: 10px; width: 100%; margin-top: 10px; display: none; text-align: center; box-sizing: border-box;}
 
-        .btn { width: 100%; max-width: 300px; padding: 18px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin-top: 10px; }
-        .btn-start { background: #27ae60; border: none; color: white; }
-        .btn-stop { background: #c0392b; border: none; color: white; }
-        .btn-reset { background: rgba(192, 57, 43, 0.1); border: 1px solid #c0392b; color: #c0392b; font-size: 0.65rem; margin-top: 15px; padding: 12px; border-radius: 12px; width: 100%; font-weight: bold; }
+        .btn { width: 100%; max-width: 300px; padding: 16px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
+        .btn-start { background: #27ae60; border: none; color: white; margin-top: 10px; }
+        .btn-stop { background: #c0392b; border: none; color: white; margin-top: 10px; }
         
-        #map { width: 100%; flex-grow: 1; border-radius: 20px; margin: 15px 0; border: 1px solid rgba(255,255,255,0.1); }
-        .stats { width: 100%; display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; }
-        .stat b { display: block; font-size: 1.5rem; color: var(--orange); }
+        #map { width: 100%; flex-grow: 1; border-radius: 20px; margin: 10px 0; border: 1px solid rgba(255,255,255,0.1); }
+        .stats { width: 100%; display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; }
+        .stat b { display: block; font-size: 1.3rem; color: var(--orange); }
         
-        .history-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 20px; border-left: 5px solid var(--orange); display: flex; flex-direction: column; gap: 10px; }
-        .mini-map { width: 100%; height: 150px; border-radius: 10px; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
+        .history-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; border-left: 5px solid var(--orange); }
+        .mini-map { width: 100%; height: 140px; border-radius: 10px; margin-top: 10px; }
     </style>
 </head>
 <body onload="verificarSessao()">
@@ -57,8 +75,8 @@
     <div id="tela-login" class="container">
         <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
         <div class="login-box">
-            <h2 style="color: var(--orange); margin-bottom: 20px;">ACESSO RESTRITO</h2>
-            <input type="password" id="senha-acesso" class="input-login" placeholder="Senha Universal">
+            <h2 style="color: var(--orange); font-size: 1.2rem;">ACESSO L.A. CUSTOM</h2>
+            <input type="password" id="senha-acesso" class="input-login" placeholder="Senha Master">
             <button class="btn" onclick="validarLogin()">Entrar</button>
         </div>
     </div>
@@ -67,28 +85,28 @@
         <div id="tela-veiculo" class="container">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <div class="selector">
-                <div id="car-render" class="floating"></div>
-                <h2 id="car-name" style="color: var(--orange); margin: 15px 0 5px; text-transform: uppercase;">---</h2>
-                <div style="display: flex; gap: 45px; margin-top: 15px;">
-                    <button onclick="mudar(-1)" style="background:none; border:none; color:white; font-size: 3rem;">❮</button>
-                    <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 3rem;">❯</button>
+                <div id="car-render"></div>
+                <h2 id="car-name" style="color: var(--orange); font-size: 1rem; margin-top: 10px;">---</h2>
+                <div style="display: flex; gap: 40px; margin-top: 5px;">
+                    <button onclick="mudar(-1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❮</button>
+                    <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❯</button>
                 </div>
             </div>
-            <button class="btn" onclick="nextStage()">Selecionar Motorista</button>
-            <button class="btn" style="border:none; opacity: 0.4; font-size: 0.7rem;" onclick="viewHistory()">Histórico de Trajetos</button>
+            <button class="btn" onclick="nextStage()" style="margin-top: 10px;">Selecionar Motorista</button>
+            <button class="btn" style="border:none; opacity: 0.5; font-size: 0.7rem; padding: 10px;" onclick="viewHistory()">Ver Relatórios</button>
         </div>
 
         <div id="tela-motorista" class="container" style="display:none;">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
-            <h2 style="margin: 20px 0;">Identificação</h2>
+            <h3 style="margin: 10px 0;">Identificação</h3>
             <div class="driver-grid">
                 <div class="driver-card" onclick="setDriver(this, 'Marco')"><b>Marco</b></div>
                 <div class="driver-card" onclick="setDriver(this, 'Fabio')"><b>Fabio</b></div>
             </div>
-            <div class="driver-card" style="width: 100%; margin-top: 10px;" onclick="setDriver(this, 'Outros')"><b>Outros</b></div>
-            <input type="text" id="outro-nome" placeholder="Digite o nome completo">
-
-            <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar e Ir ao Mapa</button>
+            <div class="driver-card" style="width: 100%;" onclick="setDriver(this, 'Outros')"><b>Outros</b></div>
+            <input type="text" id="outro-nome" placeholder="Nome Completo">
+            <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
+            <button onclick="location.reload()" style="background:none; border:none; color:#555; margin: 10px 0;">Voltar</button>
         </div>
 
         <div id="tela-mapa" class="container" style="display:none;">
@@ -101,10 +119,10 @@
         </div>
 
         <div id="tela-logs" class="container" style="display:none; overflow-y: auto;">
-            <h2 style="color: var(--orange);">GESTÃO DE FROTA</h2>
-            <button class="btn" style="background:#25d366; color:white; border:none; font-size:0.8rem;" onclick="sendDailyReport(true)">Enviar Relatório Hoje</button>
-            <button class="btn-reset" onclick="limparTudo()">ZERAR TODO O HISTÓRICO</button>
-            <div id="lista-logs" style="width: 100%; margin-top: 15px;"></div>
+            <h3 style="color: var(--orange);">GESTÃO DE FROTA</h3>
+            <button class="btn" style="background:#25d366; color:white; border:none; font-size:0.8rem;" onclick="sendDailyReport(true)">Enviar WhatsApp Hoje</button>
+            <button style="background:none; border:none; color:#c0392b; font-size:0.6rem; margin-top:10px;" onclick="limparTudo()">ZERAR HISTÓRICO</button>
+            <div id="lista-logs" style="width: 100%; margin-top: 10px;"></div>
             <button class="btn" onclick="location.reload()">Início</button>
         </div>
     </div>
@@ -112,7 +130,7 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
         const SENHA_MESTRA = "LACUSTOM2026"; 
-        const STORAGE_KEY = 'la_fleet_v19';
+        const STORAGE_KEY = 'la_fleet_v20';
 
         function verificarSessao() {
             if(localStorage.getItem('sessao_la') === 'ativa') {
@@ -122,8 +140,7 @@
         }
 
         function validarLogin() {
-            const senha = document.getElementById('senha-acesso').value;
-            if(senha === SENHA_MESTRA) {
+            if(document.getElementById('senha-acesso').value === SENHA_MESTRA) {
                 localStorage.setItem('sessao_la', 'ativa');
                 document.getElementById('tela-login').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
@@ -156,7 +173,7 @@
             if (!driver) return alert("Selecione o motorista!");
             if (driver === 'Outros') {
                 const val = document.getElementById('outro-nome').value;
-                if (!val) return alert("Digite o nome completo!");
+                if (!val) return alert("Digite o nome!");
                 driver = val;
             }
             document.getElementById('tela-motorista').style.display = 'none';
@@ -192,12 +209,7 @@
         function fecharCorrida() {
             if (watch) navigator.geolocation.clearWatch(watch);
             const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            logs.unshift({ 
-                car: fleet[idx].nome, user: driver, km: (dist / 1000).toFixed(2), 
-                time: document.getElementById('tempo').innerText, date: new Date().toLocaleDateString('pt-BR'),
-                start: startTimeStr, fullDate: new Date().toLocaleString('pt-BR'),
-                track: path 
-            });
+            logs.unshift({ car: fleet[idx].nome, user: driver, km: (dist / 1000).toFixed(2), time: document.getElementById('tempo').innerText, date: new Date().toLocaleDateString('pt-BR'), start: startTimeStr, fullDate: new Date().toLocaleString('pt-BR'), track: path });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
             location.reload();
         }
@@ -209,11 +221,11 @@
             const container = document.getElementById('lista-logs');
             container.innerHTML = logs.map((l, i) => `
                 <div class="history-card">
-                    <div style="display:flex; justify-content:space-between;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
                         <b>${l.car} - ${l.user}</b>
                         <span>${l.km} km</span>
                     </div>
-                    <small>Início: ${l.start} | Registro: ${l.fullDate}</small>
+                    <small style="font-size:0.7rem; opacity:0.6;">Saída: ${l.start} | ${l.date}</small>
                     <div id="map-${i}" class="mini-map"></div>
                 </div>
             `).join('');
@@ -229,11 +241,9 @@
         }
 
         function limparTudo() {
-            if (confirm("Deseja apagar todo o histórico?")) {
-                if (confirm("Confirmar exclusão definitiva?")) {
-                    localStorage.removeItem(STORAGE_KEY);
-                    location.reload();
-                }
+            if (confirm("Apagar todo o histórico?") && confirm("Certeza absoluta?")) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
             }
         }
 
@@ -243,9 +253,7 @@
             const targetLogs = onlyToday ? logs.filter(l => l.date === today) : logs;
             if (targetLogs.length === 0) return alert("Sem dados.");
             let msg = `🏁 *RELATÓRIO L.A. CUSTOM*%0A📅 *Data:* ${today}%0A────────────────────%0A`;
-            targetLogs.forEach((l, i) => {
-                msg += `${i+1}. 🚗 *${l.car}* (${l.user})%0A   🕒 Saída: ${l.start}%0A   📏 Distância: ${l.km} km%0A   ⏱️ Duração: ${l.time} min%0A%0A`;
-            });
+            targetLogs.forEach((l, i) => { msg += `${i+1}. 🚗 *${l.car}* (${l.user})%0A   🕒 Saída: ${l.start}%0A   📏 Distância: ${l.km} km%0A   ⏱️ Duração: ${l.time} min%0A%0A`; });
             window.open(`https://wa.me/?text=${msg}`, '_blank');
         }
     </script>
