@@ -1,0 +1,17 @@
+{
+  "name": "L.A. Controle de Frota",
+  "short_name": "L.A. Controle",
+  "description": "Monitoramento de Veículos L.A.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#f39c12",
+  "icons": [
+    {
+      "src": "https://i.ibb.co/27cxGcb1/lacustomlogotipo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

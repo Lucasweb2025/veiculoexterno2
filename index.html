@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
+    <link rel="manifest" href="manifest.json?v=2">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png?v=2">
     
-    <title>L.A. CONTROLE V.26</title>
+    <title>L.A. CONTROLE V.28</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
@@ -19,36 +18,35 @@
         html, body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: -apple-system, sans-serif; height: 100%; width: 100%; overflow: hidden; }
         .bg { position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); z-index: 0; }
         .container { display: flex; flex-direction: column; height: 100dvh; padding: 20px; box-sizing: border-box; align-items: center; z-index: 1; position: relative; }
+        .header { width: 100%; text-align: center; padding: 10px 0; margin-bottom: 10px; }
+        .logo { height: 65px; filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4)); }
         #tela-login { justify-content: center; }
         .login-box { width: 100%; max-width: 300px; text-align: center; }
-        .input-login { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.1rem; box-sizing: border-box; }
-        .header { width: 100%; text-align: center; padding: 10px 0; }
-        .logo { height: 75px; filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4)); }
+        .input-login { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.1rem; width: 100%; box-sizing: border-box; }
         .selector { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden;}
-        .car-visual { max-width: 90%; max-height: 180px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); animation: carPop 0.6s ease-out; }
-        @keyframes carPop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .car-visual { max-width: 90%; max-height: 160px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); border-radius: 15px; }
         .driver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin: 15px 0; }
-        .driver-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .driver-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; }
         .driver-card.selected { border-color: var(--orange); background: rgba(243, 156, 18, 0.2); }
-        input#outro-nome { background: none; border: 1px solid var(--orange); color: white; padding: 12px; border-radius: 10px; width: 100%; margin-top: 10px; display: none; text-align: center; box-sizing: border-box;}
-        .btn { width: 100%; max-width: 300px; padding: 16px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
+        #outro-nome { background: none; border: 1px solid var(--orange); color: white; padding: 12px; border-radius: 10px; width: 100%; margin-top: 10px; display: none; text-align: center; box-sizing: border-box; }
+        .btn { width: 100%; max-width: 300px; padding: 16px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; cursor: pointer; }
         .btn-start { background: #27ae60; border: none; color: white; margin-top: 10px; }
         .btn-stop { background: #c0392b; border: none; color: white; margin-top: 10px; }
         #map { width: 100%; flex-grow: 1; border-radius: 20px; margin: 10px 0; border: 1px solid rgba(255,255,255,0.1); }
         .stats { width: 100%; display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; }
         .stat b { display: block; font-size: 1.3rem; color: var(--orange); }
-        .history-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; border-left: 5px solid var(--orange); }
+        .history-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; border-left: 5px solid var(--orange); width: 100%; box-sizing: border-box; }
         .mini-map { width: 100%; height: 140px; border-radius: 10px; margin-top: 10px; }
     </style>
 </head>
 <body onload="verificarSessao()">
     <div class="bg"></div>
-    
+
     <div id="tela-login" class="container">
         <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
         <div class="login-box">
-            <h2 style="color: var(--orange); font-size: 1.2rem;">ACESSO RESTRITO</h2>
-            <input type="text" id="senha-acesso" class="input-login" placeholder="Senha Master" onkeypress="if(event.key==='Enter') validarLogin()">
+            <h2 style="color: var(--orange); font-size: 1.1rem; margin-bottom: 20px;">ACESSO RESTRITO</h2>
+            <input type="text" id="senha-acesso" class="input-login" placeholder="Senha Master">
             <button class="btn" onclick="validarLogin()">Entrar</button>
         </div>
     </div>
@@ -64,18 +62,18 @@
                     <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❯</button>
                 </div>
             </div>
-            <button class="btn" onclick="nextStage()">Selecionar Motorista</button>
-            <button class="btn" style="border:none; opacity: 0.5; font-size: 0.7rem; padding: 10px; margin-top:10px" onclick="viewHistory()">Ver Relatórios</button>
+            <button class="btn" onclick="proximaTela('tela-veiculo', 'tela-motorista')">Selecionar Motorista</button>
+            <button class="btn" style="border:none; opacity: 0.5; font-size: 0.7rem; padding: 10px; margin-top: 10px;" onclick="viewHistory()">Ver Relatórios</button>
         </div>
 
         <div id="tela-motorista" class="container" style="display:none;">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <h3>Identificação</h3>
             <div class="driver-grid">
-                <div class="driver-card" onclick="setDriver(this, 'Marco')"><b>Marco</b></div>
-                <div class="driver-card" onclick="setDriver(this, 'Fabio')"><b>Fabio</b></div>
+                <div class="driver-card" onclick="setDriver(this, 'Marco')">Marco</div>
+                <div class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
             </div>
-            <div class="driver-card" style="width: 100%;" onclick="setDriver(this, 'Outros')"><b>Outros</b></div>
+            <div class="driver-card" style="width: 100%;" onclick="setDriver(this, 'Outros')">Outros</div>
             <input type="text" id="outro-nome" placeholder="Nome Completo">
             <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
             <button onclick="location.reload()" style="background:none; border:none; color:#555; margin: 10px 0;">Voltar</button>
@@ -92,8 +90,7 @@
 
         <div id="tela-logs" class="container" style="display:none; overflow-y: auto;">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
-            <h3 style="color: var(--orange);">GESTÃO DE FROTA</h3>
-            <button class="btn" style="background:#25d366; color:white; border:none; font-size:0.8rem; margin-bottom:10px;" onclick="sendDailyReport(true)">Enviar WhatsApp Hoje</button>
+            <button class="btn" style="background:#25d366; color:white; border:none; font-size:0.8rem; margin-bottom:15px;" onclick="sendDailyReport(true)">Enviar WhatsApp Hoje</button>
             <div id="lista-logs" style="width: 100%;"></div>
             <button class="btn" onclick="location.reload()">Início</button>
         </div>
@@ -101,15 +98,12 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-
-        const STORAGE_KEY = 'la_fleet_v26', TEMP_KEY = 'la_fleet_temp_v26', SENHA_MESTRA = "LACUSTOM2026";
-        const SEU_NUMERO = "5511945838316";
+        const SENHA_MESTRA = "LACUSTOM2026"; 
+        const STORAGE_KEY = 'la_fleet_v28', TEMP_KEY = 'la_fleet_temp_v28';
 
         function validarLogin() {
-            // Normaliza a senha: tira espaços e ignora se é maiúscula ou minúscula
-            const senha = document.getElementById('senha-acesso').value.trim().toUpperCase();
-            if(senha === SENHA_MESTRA) {
+            const digitada = document.getElementById('senha-acesso').value.trim().toUpperCase();
+            if(digitada === SENHA_MESTRA) {
                 localStorage.setItem('sessao_la', 'ativa');
                 document.getElementById('tela-login').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
@@ -124,29 +118,51 @@
                 document.getElementById('tela-login').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
                 const lostTrip = localStorage.getItem(TEMP_KEY);
-                if(lostTrip && confirm("Viagem anterior interrompida! Salvar agora?")) { recuperarViagem(JSON.parse(lostTrip)); }
+                if(lostTrip) {
+                    if(confirm("Viagem interrompida detectada! Salvar?")) {
+                        const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                        logs.unshift(JSON.parse(lostTrip));
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+                        localStorage.removeItem(TEMP_KEY);
+                        location.reload();
+                    } else { localStorage.removeItem(TEMP_KEY); }
+                }
             }
         }
 
-        function recuperarViagem(data) {
-            const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            logs.unshift(data); localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-            localStorage.removeItem(TEMP_KEY); location.reload();
+        function proximaTela(atual, proxima) {
+            document.getElementById(atual).style.display = 'none';
+            document.getElementById(proxima).style.display = 'flex';
         }
 
-        const fleet = [{ id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },{ id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }];
+        const fleet = [
+            { id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },
+            { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
+        ];
         let idx = 0, driver = "", running = false, dist = 0, timer, startTime, path = [], watch, map, marker, startTimeStr = "";
 
-        function mudar(n) { idx = (idx + n + fleet.length) % fleet.length; document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" class="car-visual">`; document.getElementById('car-name').innerText = fleet[idx].nome; }
+        function mudar(n) { 
+            idx = (idx + n + fleet.length) % fleet.length; 
+            document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" class="car-visual">`; 
+            document.getElementById('car-name').innerText = fleet[idx].nome; 
+        }
         mudar(0);
 
-        function nextStage() { document.getElementById('tela-veiculo').style.display = 'none'; document.getElementById('tela-motorista').style.display = 'flex'; }
-        function setDriver(el, name) { document.querySelectorAll('.driver-card').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); driver = name; document.getElementById('outro-nome').style.display = (name === 'Outros') ? 'block' : 'none'; }
+        function setDriver(el, name) { 
+            document.querySelectorAll('.driver-card').forEach(c => c.classList.remove('selected')); 
+            el.classList.add('selected'); 
+            driver = name; 
+            document.getElementById('outro-nome').style.display = (name === 'Outros') ? 'block' : 'none'; 
+        }
 
         function initOperation() {
-            if (new Date().getHours() >= 19) return alert("Bloqueado após as 19h.");
+            if (new Date().getHours() >= 19) return alert("Bloqueado após 19h.");
             if (!driver) return alert("Selecione o motorista!");
-            document.getElementById('tela-motorista').style.display = 'none'; document.getElementById('tela-mapa').style.display = 'flex';
+            if (driver === 'Outros') {
+                driver = document.getElementById('outro-nome').value.trim();
+                if (!driver) return alert("Digite o nome!");
+            }
+            proximaTela('tela-motorista', 'tela-mapa');
             if (!map) { 
                 map = L.map('map', { zoomControl: false, attributionControl: false }).setView([-23.55, -46.63], 16); 
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map); 
@@ -159,13 +175,14 @@
             const btn = document.getElementById('btn-master');
             if (!running) {
                 running = true; btn.innerText = "Finalizar Corrida"; btn.className = "btn btn-stop";
-                startTime = Date.now(); startTimeStr = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+                startTime = Date.now();
+                startTimeStr = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
                 timer = setInterval(() => {
                     if (new Date().getHours() >= 19) { fecharCorrida(); return; }
                     const d = new Date(Date.now() - startTime);
-                    const tempoAtual = (d.getUTCHours() > 0 ? d.getUTCHours() + ":" : "") + String(d.getUTCMinutes()).padStart(2,'0') + ":" + String(d.getUTCSeconds()).padStart(2,'0');
-                    document.getElementById('tempo').innerText = tempoAtual;
-                    localStorage.setItem(TEMP_KEY, JSON.stringify({ car: fleet[idx].nome, user: driver, km: (dist/1000).toFixed(2), time: tempoAtual, date: new Date().toLocaleDateString('pt-BR'), start: startTimeStr, track: path, status: 'interrompida' }));
+                    const tempoStr = (d.getUTCHours() > 0 ? d.getUTCHours() + ":" : "") + String(d.getUTCMinutes()).padStart(2,'0') + ":" + String(d.getUTCSeconds()).padStart(2,'0');
+                    document.getElementById('tempo').innerText = tempoStr;
+                    localStorage.setItem(TEMP_KEY, JSON.stringify({ car: fleet[idx].nome, user: driver, km: (dist/1000).toFixed(2), time: tempoStr, date: new Date().toLocaleDateString('pt-BR'), start: startTimeStr, track: path, status: 'interrompida' }));
                 }, 1000);
 
                 watch = navigator.geolocation.watchPosition(p => {
@@ -179,14 +196,21 @@
         }
 
         function fecharCorrida() {
-            if (watch) navigator.geolocation.clearWatch(watch); clearInterval(timer);
+            if (watch) navigator.geolocation.clearWatch(watch);
+            clearInterval(timer);
             const finalData = JSON.parse(localStorage.getItem(TEMP_KEY));
-            if(finalData) { finalData.status = 'finalizada'; const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); logs.unshift(finalData); localStorage.setItem(STORAGE_KEY, JSON.stringify(logs)); }
-            localStorage.removeItem(TEMP_KEY); location.reload();
+            if(finalData) {
+                finalData.status = 'finalizada';
+                const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                logs.unshift(finalData);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+            }
+            localStorage.removeItem(TEMP_KEY);
+            location.reload();
         }
 
         function viewHistory() {
-            document.getElementById('tela-veiculo').style.display = 'none'; document.getElementById('tela-logs').style.display = 'flex';
+            proximaTela('tela-veiculo', 'tela-logs');
             const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             document.getElementById('lista-logs').innerHTML = logs.map((l, i) => `<div class="history-card"><b>${l.car} - ${l.user}</b><br>${l.km} km em ${l.time}<br><small>${l.date} - ${l.start}</small><div id="map-${i}" class="mini-map"></div></div>`).join('');
             logs.forEach((l, i) => { if (l.track && l.track.length > 1) { const m = L.map(`map-${i}`, { dragging: false, zoomControl: false, attributionControl: false }).setView(l.track[0], 15); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(m); L.polyline(l.track, {color: '#f39c12', weight: 4}).addTo(m); m.fitBounds(L.polyline(l.track).getBounds()); } });
@@ -196,11 +220,13 @@
             const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             const today = new Date().toLocaleDateString('pt-BR');
             const targetLogs = onlyToday ? logs.filter(l => l.date === today) : logs;
-            if (targetLogs.length === 0) return alert("Sem dados.");
+            if (targetLogs.length === 0) return alert("Sem relatórios hoje.");
             let msg = `🏁 *RELATÓRIO L.A. CUSTOM*\n📅 *Data:* ${today}\n────────────────────\n`;
-            targetLogs.forEach((l, i) => { msg += `${i+1}. 🚗 *${l.car}* (${l.user})\n   📏 ${l.km} km | ⏱️ ${l.time} (${l.status})\n\n`; });
-            window.open(`https://api.whatsapp.com/send?phone=${SEU_NUMERO}&text=${encodeURIComponent(msg)}`, '_blank');
+            targetLogs.forEach((l, i) => { msg += `${i+1}. 🚗 *${l.car}* (${l.user})\n   📏 ${l.km} km | ⏱️ ${l.time}\n\n`; });
+            window.open(`https://api.whatsapp.com/send?phone=5511945838316&text=${encodeURIComponent(msg)}`, '_blank');
         }
+
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
     </script>
 </body>
 </html>
