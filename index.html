@@ -9,84 +9,53 @@
     <meta name="apple-mobile-web-app-title" content="L.A. Controle">
     <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
     
-    <title>L.A. CONTROLE V.20</title>
+    <title>L.A. CONTROLE V.19</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         :root { --orange: #f39c12; --dark: #000; }
-        
-        /* CORREÇÃO PARA TELA CORTADA NO CELULAR */
-        html, body { 
-            margin: 0; 
-            padding: 0; 
-            background: var(--dark); 
-            color: white; 
-            font-family: -apple-system, sans-serif;
-            height: 100%;
-            width: 100%;
-            overflow: hidden; 
-        }
-
+        html, body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: -apple-system, sans-serif; height: 100%; width: 100%; overflow: hidden; }
         .bg { position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); z-index: 0; }
-        
-        /* CONTAINER DINÂMICO */
-        .container { 
-            display: flex; 
-            flex-direction: column; 
-            height: 100dvh; /* Dynamic Viewport Height: resolve o corte das barras */
-            padding: 20px; 
-            box-sizing: border-box; 
-            align-items: center; 
-            z-index: 1; 
-            position: relative;
-        }
-        
+        .container { display: flex; flex-direction: column; height: 100dvh; padding: 20px; box-sizing: border-box; align-items: center; z-index: 1; position: relative; }
         #tela-login { justify-content: center; }
         .login-box { width: 100%; max-width: 300px; text-align: center; }
         .input-login { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.1rem; box-sizing: border-box; }
-
-        .header { width: 100%; text-align: center; padding: 5px 0; }
-        .logo { height: 60px; filter: drop-shadow(0 0 10px rgba(243, 156, 18, 0.3)); }
-        
+        .header { width: 100%; text-align: center; padding: 10px 0; }
+        .logo { height: 75px; filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4)); }
         .selector { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden;}
-        .car-visual { max-width: 85%; max-height: 160px; filter: drop-shadow(0 10px 20px rgba(243, 156, 18, 0.4)); animation: carPop 0.6s ease-out; }
+        .car-visual { max-width: 90%; max-height: 180px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); animation: carPop 0.6s ease-out; }
         @keyframes carPop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
         .driver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin: 15px 0; }
         .driver-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
         .driver-card.selected { border-color: var(--orange); background: rgba(243, 156, 18, 0.2); }
         input#outro-nome { background: none; border: 1px solid var(--orange); color: white; padding: 12px; border-radius: 10px; width: 100%; margin-top: 10px; display: none; text-align: center; box-sizing: border-box;}
-
         .btn { width: 100%; max-width: 300px; padding: 16px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
         .btn-start { background: #27ae60; border: none; color: white; margin-top: 10px; }
         .btn-stop { background: #c0392b; border: none; color: white; margin-top: 10px; }
-        
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         #map { width: 100%; flex-grow: 1; border-radius: 20px; margin: 10px 0; border: 1px solid rgba(255,255,255,0.1); }
         .stats { width: 100%; display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; }
         .stat b { display: block; font-size: 1.3rem; color: var(--orange); }
-        
         .history-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; border-left: 5px solid var(--orange); }
         .mini-map { width: 100%; height: 140px; border-radius: 10px; margin-top: 10px; }
     </style>
 </head>
 <body onload="verificarSessao()">
     <div class="bg"></div>
-
     <div id="tela-login" class="container">
         <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
         <div class="login-box">
-            <h2 style="color: var(--orange); font-size: 1.2rem;">ACESSO L.A. CUSTOM</h2>
+            <h2 style="color: var(--orange); font-size: 1.2rem;">ACESSO RESTRITO</h2>
             <input type="password" id="senha-acesso" class="input-login" placeholder="Senha Master">
             <button class="btn" onclick="validarLogin()">Entrar</button>
         </div>
     </div>
-    
     <div id="app-content" style="display: none;">
         <div id="tela-veiculo" class="container">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <div class="selector">
                 <div id="car-render"></div>
-                <h2 id="car-name" style="color: var(--orange); font-size: 1rem; margin-top: 10px;">---</h2>
+                <h2 id="car-name" style="color: var(--orange); font-size: 1.2rem; margin-top: 10px;">---</h2>
                 <div style="display: flex; gap: 40px; margin-top: 5px;">
                     <button onclick="mudar(-1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❮</button>
                     <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❯</button>
@@ -95,7 +64,6 @@
             <button class="btn" onclick="nextStage()" style="margin-top: 10px;">Selecionar Motorista</button>
             <button class="btn" style="border:none; opacity: 0.5; font-size: 0.7rem; padding: 10px;" onclick="viewHistory()">Ver Relatórios</button>
         </div>
-
         <div id="tela-motorista" class="container" style="display:none;">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <h3 style="margin: 10px 0;">Identificação</h3>
@@ -108,16 +76,14 @@
             <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
             <button onclick="location.reload()" style="background:none; border:none; color:#555; margin: 10px 0;">Voltar</button>
         </div>
-
         <div id="tela-mapa" class="container" style="display:none;">
             <div class="stats">
                 <div class="stat"><small>DISTÂNCIA</small><b id="km">0.00</b><small>KM</small></div>
-                <div class="stat"><small>TEMPO</small><b id="tempo">00:00</b><small>MIN</small></div>
+                <div class="stat"><small>TEMPO</small><b id="tempo">00:00</b></div>
             </div>
             <div id="map"></div>
             <button id="btn-master" class="btn btn-start" onclick="toggleTracking()">Iniciar Rastreio</button>
         </div>
-
         <div id="tela-logs" class="container" style="display:none; overflow-y: auto;">
             <h3 style="color: var(--orange);">GESTÃO DE FROTA</h3>
             <button class="btn" style="background:#25d366; color:white; border:none; font-size:0.8rem;" onclick="sendDailyReport(true)">Enviar WhatsApp Hoje</button>
@@ -126,66 +92,25 @@
             <button class="btn" onclick="location.reload()">Início</button>
         </div>
     </div>
-
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
         const SENHA_MESTRA = "LACUSTOM2026"; 
-        const STORAGE_KEY = 'la_fleet_v20';
-
-        function verificarSessao() {
-            if(localStorage.getItem('sessao_la') === 'ativa') {
-                document.getElementById('tela-login').style.display = 'none';
-                document.getElementById('app-content').style.display = 'block';
-            }
-        }
-
-        function validarLogin() {
-            if(document.getElementById('senha-acesso').value === SENHA_MESTRA) {
-                localStorage.setItem('sessao_la', 'ativa');
-                document.getElementById('tela-login').style.display = 'none';
-                document.getElementById('app-content').style.display = 'block';
-            } else { alert("Senha Incorreta!"); }
-        }
-
-        const fleet = [
-            { id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },
-            { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
-        ];
+        const STORAGE_KEY = 'la_fleet_v19_final';
+        function verificarSessao() { if(localStorage.getItem('sessao_la') === 'ativa') { document.getElementById('tela-login').style.display = 'none'; document.getElementById('app-content').style.display = 'block'; } }
+        function validarLogin() { if(document.getElementById('senha-acesso').value === SENHA_MESTRA) { localStorage.setItem('sessao_la', 'ativa'); document.getElementById('tela-login').style.display = 'none'; document.getElementById('app-content').style.display = 'block'; } else { alert("Senha Incorreta!"); } }
+        const fleet = [{ id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },{ id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }];
         let idx = 0, driver = "", running = false, dist = 0, timer, startTime, path = [], watch, map, line, startTimeStr = "";
-
-        function mudar(n) {
-            idx = (idx + n + fleet.length) % fleet.length;
-            document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" class="car-visual">`;
-            document.getElementById('car-name').innerText = fleet[idx].nome;
-        }
+        function mudar(n) { idx = (idx + n + fleet.length) % fleet.length; document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" class="car-visual">`; document.getElementById('car-name').innerText = fleet[idx].nome; }
         mudar(0);
-
         function nextStage() { document.getElementById('tela-veiculo').style.display = 'none'; document.getElementById('tela-motorista').style.display = 'flex'; }
-
-        function setDriver(el, name) {
-            document.querySelectorAll('.driver-card').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected'); 
-            driver = name;
-            document.getElementById('outro-nome').style.display = (name === 'Outros') ? 'block' : 'none';
-        }
-
+        function setDriver(el, name) { document.querySelectorAll('.driver-card').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); driver = name; document.getElementById('outro-nome').style.display = (name === 'Outros') ? 'block' : 'none'; }
         function initOperation() {
             if (!driver) return alert("Selecione o motorista!");
-            if (driver === 'Outros') {
-                const val = document.getElementById('outro-nome').value;
-                if (!val) return alert("Digite o nome!");
-                driver = val;
-            }
-            document.getElementById('tela-motorista').style.display = 'none';
-            document.getElementById('tela-mapa').style.display = 'flex';
-            if (!map) {
-                map = L.map('map', { zoomControl: false, attributionControl: false }).setView([-23.55, -46.63], 16);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-                line = L.polyline([], {color: '#f39c12', weight: 8}).addTo(map);
-            }
+            if (driver === 'Outros') { const val = document.getElementById('outro-nome').value; if (!val) return alert("Digite o nome!"); driver = val; }
+            document.getElementById('tela-motorista').style.display = 'none'; document.getElementById('tela-mapa').style.display = 'flex';
+            if (!map) { map = L.map('map', { zoomControl: false, attributionControl: false }).setView([-23.55, -46.63], 16); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map); line = L.polyline([], {color: '#f39c12', weight: 8}).addTo(map); }
             setTimeout(() => map.invalidateSize(), 300);
         }
-
         function toggleTracking() {
             const btn = document.getElementById('btn-master');
             if (!running) {
@@ -194,8 +119,10 @@
                 startTimeStr = new Date(startTime).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
                 timer = setInterval(() => {
                     const d = new Date(Date.now() - startTime);
-                    document.getElementById('tempo').innerText = `${String(d.getUTCMinutes()).padStart(2,'0')}:${String(d.getUTCSeconds()).padStart(2,'0')}`;
+                    const h = d.getUTCHours(), m = String(d.getUTCMinutes()).padStart(2,'0'), s = String(d.getUTCSeconds()).padStart(2,'0');
+                    document.getElementById('tempo').innerText = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
                 }, 1000);
+                // VOLTOU PARA O COMPORTAMENTO DE ONTEM: NAVEGADOR PEDE PERMISSÃO E FICA EM SILÊNCIO SE FALHAR
                 watch = navigator.geolocation.watchPosition(p => {
                     const pos = [p.coords.latitude, p.coords.longitude];
                     if (p.coords.accuracy > 40) return;
@@ -205,56 +132,31 @@
                 }, null, { enableHighAccuracy: true });
             } else { fecharCorrida(); }
         }
-
         function fecharCorrida() {
+            const btn = document.getElementById('btn-master');
+            btn.disabled = true; btn.innerText = "Salvando...";
             if (watch) navigator.geolocation.clearWatch(watch);
             const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             logs.unshift({ car: fleet[idx].nome, user: driver, km: (dist / 1000).toFixed(2), time: document.getElementById('tempo').innerText, date: new Date().toLocaleDateString('pt-BR'), start: startTimeStr, fullDate: new Date().toLocaleString('pt-BR'), track: path });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
             location.reload();
         }
-
         function viewHistory() {
-            document.getElementById('tela-veiculo').style.display = 'none';
-            document.getElementById('tela-logs').style.display = 'flex';
+            document.getElementById('tela-veiculo').style.display = 'none'; document.getElementById('tela-logs').style.display = 'flex';
             const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             const container = document.getElementById('lista-logs');
-            container.innerHTML = logs.map((l, i) => `
-                <div class="history-card">
-                    <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
-                        <b>${l.car} - ${l.user}</b>
-                        <span>${l.km} km</span>
-                    </div>
-                    <small style="font-size:0.7rem; opacity:0.6;">Saída: ${l.start} | ${l.date}</small>
-                    <div id="map-${i}" class="mini-map"></div>
-                </div>
-            `).join('');
-
-            logs.forEach((l, i) => {
-                if (l.track && l.track.length > 0) {
-                    const m = L.map(`map-${i}`, { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false }).setView(l.track[0], 15);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(m);
-                    L.polyline(l.track, {color: '#f39c12', weight: 4}).addTo(m);
-                    m.fitBounds(L.polyline(l.track).getBounds());
-                }
-            });
+            container.innerHTML = logs.map((l, i) => `<div class="history-card"><div style="display:flex; justify-content:space-between; font-size:0.9rem;"><b>${l.car} - ${l.user}</b><span>${l.km} km</span></div><small style="font-size:0.7rem; opacity:0.6;">Saída: ${l.start} | ${l.date}</small><div id="map-${i}" class="mini-map"></div></div>`).join('');
+            logs.forEach((l, i) => { if (l.track && l.track.length > 0) { const m = L.map(`map-${i}`, { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false }).setView(l.track[0], 15); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(m); L.polyline(l.track, {color: '#f39c12', weight: 4}).addTo(m); m.fitBounds(L.polyline(l.track).getBounds()); } });
         }
-
-        function limparTudo() {
-            if (confirm("Apagar todo o histórico?") && confirm("Certeza absoluta?")) {
-                localStorage.removeItem(STORAGE_KEY);
-                location.reload();
-            }
-        }
-
+        function limparTudo() { if (confirm("Apagar todo o histórico?") && confirm("Certeza absoluta?")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
         function sendDailyReport(onlyToday) {
             const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             const today = new Date().toLocaleDateString('pt-BR');
             const targetLogs = onlyToday ? logs.filter(l => l.date === today) : logs;
             if (targetLogs.length === 0) return alert("Sem dados.");
-            let msg = `🏁 *RELATÓRIO L.A. CUSTOM*%0A📅 *Data:* ${today}%0A────────────────────%0A`;
-            targetLogs.forEach((l, i) => { msg += `${i+1}. 🚗 *${l.car}* (${l.user})%0A   🕒 Saída: ${l.start}%0A   📏 Distância: ${l.km} km%0A   ⏱️ Duração: ${l.time} min%0A%0A`; });
-            window.open(`https://wa.me/?text=${msg}`, '_blank');
+            let msg = `🏁 *RELATÓRIO L.A. CUSTOM*\n📅 *Data:* ${today}\n────────────────────\n`;
+            targetLogs.forEach((l, i) => { msg += `${i+1}. 🚗 *${l.car}* (${l.user})\n   🕒 Saída: ${l.start}\n   📏 Distância: ${l.km} km\n   ⏱️ Duração: ${l.time}\n\n`; });
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
         }
     </script>
 </body>
