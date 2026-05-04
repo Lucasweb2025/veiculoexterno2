@@ -3,17 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="L.A. Controle">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
-    
-    <title>L.A. CONTROLE V.23</title>
-    
+    <title>L.A. CONTROLE V.25</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         :root { --orange: #f39c12; --dark: #000; }
@@ -40,6 +36,7 @@
         .stat b { display: block; font-size: 1.3rem; color: var(--orange); }
         .history-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; border-left: 5px solid var(--orange); }
         .mini-map { width: 100%; height: 140px; border-radius: 10px; margin-top: 10px; }
+        #gps-status { font-size: 0.6rem; color: #aaa; margin-top: 5px; }
     </style>
 </head>
 <body onload="verificarSessao()">
@@ -52,7 +49,6 @@
             <button class="btn" onclick="validarLogin()">Entrar</button>
         </div>
     </div>
-
     <div id="app-content" style="display: none;">
         <div id="tela-veiculo" class="container">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
@@ -64,13 +60,12 @@
                     <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❯</button>
                 </div>
             </div>
-            <button class="btn" onclick="nextStage()" style="margin-top: 10px;">Selecionar Motorista</button>
-            <button class="btn" style="border:none; opacity: 0.5; font-size: 0.7rem; padding: 10px;" onclick="viewHistory()">Ver Relatórios</button>
+            <button class="btn" onclick="nextStage()">Selecionar Motorista</button>
+            <button class="btn" style="border:none; opacity: 0.5; font-size: 0.7rem; padding: 10px; margin-top:10px" onclick="viewHistory()">Ver Relatórios</button>
         </div>
-
         <div id="tela-motorista" class="container" style="display:none;">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
-            <h3 style="margin: 10px 0;">Identificação</h3>
+            <h3>Identificação</h3>
             <div class="driver-grid">
                 <div class="driver-card" onclick="setDriver(this, 'Marco')"><b>Marco</b></div>
                 <div class="driver-card" onclick="setDriver(this, 'Fabio')"><b>Fabio</b></div>
@@ -80,16 +75,15 @@
             <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
             <button onclick="location.reload()" style="background:none; border:none; color:#555; margin: 10px 0;">Voltar</button>
         </div>
-
         <div id="tela-mapa" class="container" style="display:none;">
             <div class="stats">
                 <div class="stat"><small>DISTÂNCIA</small><b id="km">0.00</b><small>KM</small></div>
                 <div class="stat"><small>TEMPO</small><b id="tempo">00:00</b></div>
             </div>
             <div id="map"></div>
+            <div id="gps-status">Aguardando sinal estável...</div>
             <button id="btn-master" class="btn btn-start" onclick="toggleTracking()">Iniciar Rastreio</button>
         </div>
-
         <div id="tela-logs" class="container" style="display:none; overflow-y: auto;">
             <h3 style="color: var(--orange);">GESTÃO DE FROTA</h3>
             <button class="btn" style="background:#25d366; color:white; border:none; font-size:0.8rem; margin-bottom:10px;" onclick="sendDailyReport(true)">Enviar WhatsApp Hoje</button>
@@ -97,42 +91,30 @@
             <button class="btn" onclick="location.reload()">Início</button>
         </div>
     </div>
-
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(() => console.log("SW OK"));
-        }
-
-        const STORAGE_KEY = 'la_fleet_v23';
-        const TEMP_KEY = 'la_fleet_temp_trip'; 
-
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+        const STORAGE_KEY = 'la_fleet_v25', TEMP_KEY = 'la_fleet_temp_v25', SENHA_MESTRA = "LACUSTOM2026";
+        
         function verificarSessao() {
             if(localStorage.getItem('sessao_la') === 'ativa') {
                 document.getElementById('tela-login').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
                 const lostTrip = localStorage.getItem(TEMP_KEY);
-                if(lostTrip) {
-                    if(confirm("Viagem anterior interrompida! Deseja salvar o último ponto registrado?")) {
-                        recuperarViagem(JSON.parse(lostTrip));
-                    } else { localStorage.removeItem(TEMP_KEY); }
-                }
+                if(lostTrip && confirm("Viagem anterior interrompida! Salvar último ponto registrado?")) { recuperarViagem(JSON.parse(lostTrip)); }
             }
         }
 
         function recuperarViagem(data) {
             const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            logs.unshift(data);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-            localStorage.removeItem(TEMP_KEY);
-            viewHistory();
+            logs.unshift(data); localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+            localStorage.removeItem(TEMP_KEY); viewHistory();
         }
 
-        const SENHA_MESTRA = "LACUSTOM2026"; 
         function validarLogin() { if(document.getElementById('senha-acesso').value === SENHA_MESTRA) { localStorage.setItem('sessao_la', 'ativa'); location.reload(); } else { alert("Senha Incorreta!"); } }
-
+        
         const fleet = [{ id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },{ id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }];
-        let idx = 0, driver = "", running = false, dist = 0, timer, startTime, path = [], watch, map, line, startTimeStr = "";
+        let idx = 0, driver = "", running = false, dist = 0, timer, startTime, path = [], watch, map, marker, startTimeStr = "";
 
         function mudar(n) { idx = (idx + n + fleet.length) % fleet.length; document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" class="car-visual">`; document.getElementById('car-name').innerText = fleet[idx].nome; }
         mudar(0);
@@ -141,12 +123,15 @@
         function setDriver(el, name) { document.querySelectorAll('.driver-card').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); driver = name; document.getElementById('outro-nome').style.display = (name === 'Outros') ? 'block' : 'none'; }
 
         function initOperation() {
+            const agora = new Date();
+            if (agora.getHours() >= 19) { alert("O rastreamento está bloqueado após as 19:00. Inicie um novo rastreio amanhã."); return; }
             if (!driver) return alert("Selecione o motorista!");
-            if (driver === 'Outros') { driver = document.getElementById('outro-nome').value; if (!driver) return alert("Digite!"); }
+            if (driver === 'Outros') { driver = document.getElementById('outro-nome').value; if (!driver) return alert("Digite o nome!"); }
             document.getElementById('tela-motorista').style.display = 'none'; document.getElementById('tela-mapa').style.display = 'flex';
             if (!map) { 
                 map = L.map('map', { zoomControl: false, attributionControl: false }).setView([-23.55, -46.63], 16); 
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map); 
+                marker = L.circleMarker([0,0], {radius: 8, color: '#f39c12', fillOpacity: 1, weight: 2}).addTo(map);
             }
             setTimeout(() => map.invalidateSize(), 300);
         }
@@ -155,43 +140,43 @@
             const btn = document.getElementById('btn-master');
             if (!running) {
                 running = true; btn.innerText = "Finalizar Corrida"; btn.className = "btn btn-stop";
-                startTime = Date.now();
-                startTimeStr = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+                startTime = Date.now(); startTimeStr = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
                 
                 timer = setInterval(() => {
+                    const agora = new Date();
+                    // TRAVA DE SEGURANÇA: Se chegar às 19:00, encerra sozinho
+                    if (agora.getHours() >= 19) { fecharCorrida(); return; }
+
                     const d = new Date(Date.now() - startTime);
                     const h = d.getUTCHours(), m = String(d.getUTCMinutes()).padStart(2,'0'), s = String(d.getUTCSeconds()).padStart(2,'0');
                     const tempoAtual = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
                     document.getElementById('tempo').innerText = tempoAtual;
                     
-                    // AUTO-SAVE: Salva tudo na Caixa Preta silenciosamente
                     localStorage.setItem(TEMP_KEY, JSON.stringify({
                         car: fleet[idx].nome, user: driver, km: (dist/1000).toFixed(2), 
-                        time: tempoAtual, date: new Date().toLocaleDateString('pt-BR'), 
+                        time: tempoAtual, date: agora.toLocaleDateString('pt-BR'), 
                         start: startTimeStr, track: path, status: 'interrompida'
                     }));
                 }, 1000);
 
                 watch = navigator.geolocation.watchPosition(p => {
                     const pos = [p.coords.latitude, p.coords.longitude];
-                    if (p.coords.accuracy > 60) return; 
+                    document.getElementById('gps-status').innerText = `Precisão: ${p.coords.accuracy.toFixed(1)}m`;
+                    if (p.coords.accuracy > 80) return; 
                     if (path.length > 0) dist += L.latLng(path[path.length - 1]).distanceTo(pos);
-                    path.push(pos); 
-                    map.flyTo(pos, 17); // Mapa focado no pino atual (limpo)
+                    path.push(pos); marker.setLatLng(pos); map.flyTo(pos, 17);
                     document.getElementById('km').innerText = (dist / 1000).toFixed(2);
-                }, null, { enableHighAccuracy: true });
+                }, (e) => { document.getElementById('gps-status').innerText = "Erro GPS: " + e.message; }, 
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
             } else { fecharCorrida(); }
         }
 
         function fecharCorrida() {
-            if (watch) navigator.geolocation.clearWatch(watch);
-            clearInterval(timer);
+            if (watch) navigator.geolocation.clearWatch(watch); clearInterval(timer);
             const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             const finalData = JSON.parse(localStorage.getItem(TEMP_KEY));
-            finalData.status = 'finalizada';
-            logs.unshift(finalData);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-            localStorage.removeItem(TEMP_KEY);
+            finalData.status = 'finalizada'; logs.unshift(finalData);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(logs)); localStorage.removeItem(TEMP_KEY);
             location.reload();
         }
 
@@ -199,11 +184,16 @@
             document.getElementById('tela-veiculo').style.display = 'none'; document.getElementById('tela-logs').style.display = 'flex';
             const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             const container = document.getElementById('lista-logs');
-            container.innerHTML = logs.map((l, i) => `<div class="history-card"><b>${l.car} - ${l.user}</b><br>${l.km} km em ${l.time}<br><small>${l.date} às ${l.start} (${l.status})</small><div id="map-${i}" class="mini-map"></div></div>`).join('');
-            
-            // Desenha a linha APENAS nos relatórios finais
+            container.innerHTML = logs.map((l, i) => `
+                <div class="history-card">
+                    <b>${l.car} - ${l.user}</b><br>
+                    ${l.km} km em ${l.time}<br>
+                    <small>${l.date} às ${l.start} (${l.status})</small>
+                    <div id="map-${i}" class="mini-map"></div>
+                </div>`).join('');
+
             logs.forEach((l, i) => {
-                if (l.track && l.track.length > 0) {
+                if (l.track && l.track.length > 1) {
                     const m = L.map(`map-${i}`, { dragging: false, zoomControl: false, attributionControl: false }).setView(l.track[0], 15);
                     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(m);
                     L.polyline(l.track, {color: '#f39c12', weight: 4}).addTo(m);
@@ -219,9 +209,8 @@
             const targetLogs = onlyToday ? logs.filter(l => l.date === today) : logs;
             if (targetLogs.length === 0) return alert("Sem dados.");
             let msg = `🏁 *RELATÓRIO L.A. CUSTOM*\n📅 *Data:* ${today}\n────────────────────\n`;
-            targetLogs.forEach((l, i) => {
-                const icon = l.status === 'finalizada' ? '✅' : '⚠️';
-                msg += `${i+1}. 🚗 *${l.car}* (${l.user})\n    🕒 Saída: ${l.start}\n    📏 Distância: ${l.km} km\n    ⏱️ Tempo: ${l.time}\n    📌 Status: ${icon} ${l.status}\n\n`;
+            targetLogs.forEach((l, i) => { 
+                msg += `${i+1}. 🚗 *${l.car}* (${l.user})\n    📏 ${l.km} km | ⏱️ ${l.time} (${l.status})\n\n`; 
             });
             window.open(`https://api.whatsapp.com/send?phone=${SEU_NUMERO}&text=${encodeURIComponent(msg)}`, '_blank');
         }
