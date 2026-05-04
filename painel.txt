@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L.A. GESTÃO - DASHBOARD CLOUD</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --orange: #f39c12; --dark: #111; }
+        body { margin: 0; font-family: sans-serif; background: #000; color: white; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar lateral */
+        .sidebar { width: 350px; background: var(--dark); border-right: 1px solid #333; display: flex; flex-direction: column; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .header-gestor { text-align: center; margin-bottom: 20px; }
+        .logo-small { height: 40px; margin-bottom: 10px; }
+        
+        /* Mapa */
+        #map-global { flex-grow: 1; height: 100%; background: #1a1a1a; }
+
+        /* Estilo dos Cards de Viagem */
+        .trip-card { background: #222; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--orange); cursor: pointer; transition: 0.3s; }
+        .trip-card:hover { background: #333; }
+        .trip-card b { color: var(--orange); display: block; margin-bottom: 5px; }
+        .trip-card small { font-size: 0.75rem; color: #aaa; }
+
+        /* Odômetros da Frota */
+        .fleet-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .car-badge { background: #000; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #444; }
+        .car-badge span { display: block; font-size: 1.1rem; font-weight: bold; color: var(--orange); }
+
+        .btn-refresh { background: var(--orange); border: none; color: black; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="header-gestor">
+            <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo-small">
+            <h3>PAINEL DE CONTROLE</h3>
+        </div>
+
+        <div id="fleet-stats" class="fleet-summary">
+            </div>
+
+        <button class="btn-refresh" onclick="location.reload()">Atualizar Dados 🔄</button>
+
+        <div id="trips-list">
+            <p style="text-align: center; opacity: 0.5;">Carregando nuvem...</p>
+        </div>
+    </div>
+
+    <div id="map-global"></div>
+
+    <script>
+        // Use as MESMAS chaves que você me mandou
+        const firebaseConfig = {
+            apiKey: "AIzaSyB4wDK8VddBeOOrfndLd7LemSGDPupKjF0",
+            authDomain: "la-controle.firebaseapp.com",
+            databaseURL: "https://la-controle-default-rtdb.firebaseio.com",
+            projectId: "la-controle",
+            storageBucket: "la-controle.firebasestorage.app",
+            messagingSenderId: "847252305513",
+            appId: "1:847252305513:web:d2caa9b0404806ea8794f8"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Inicializa o Mapa focado em Alphaville/SP (ajuste se necessário)
+        const map = L.map('map-global').setView([-23.49, -46.85], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+        let activeLayers = [];
+
+        // 1. Buscar Resumo da Frota (Odômetros)
+        db.ref('vehicles').on('value', snapshot => {
+            const data = snapshot.val();
+            const container = document.getElementById('fleet-stats');
+            container.innerHTML = '';
+            for(let id in data) {
+                container.innerHTML += `
+                    <div class="car-badge">
+                        <small>${id}</small>
+                        <span>${data[id].odometer.toFixed(1)} km</span>
+                    </div>`;
+            }
+        });
+
+        // 2. Buscar Viagens e Desenhar no Mapa
+        db.ref('trips').orderByChild('date').limitToLast(20).on('value', snapshot => {
+            const data = snapshot.val();
+            const container = document.getElementById('trips-list');
+            container.innerHTML = '';
+            
+            // Inverter para mostrar as mais recentes primeiro
+            const trips = Object.keys(data).reverse();
+
+            trips.forEach(key => {
+                const t = data[key];
+                const card = document.createElement('div');
+                card.className = 'trip-card';
+                card.innerHTML = `
+                    <b>${t.car} - ${t.driver}</b>
+                    <small>📅 ${t.date}</small><br>
+                    <small>📏 ${t.km} km | ⏱️ ${t.time}</small>
+                `;
+                
+                card.onclick = () => showTripOnMap(t.path);
+                container.appendChild(card);
+            });
+        });
+
+        function showTripOnMap(path) {
+            // Limpa linhas anteriores
+            activeLayers.forEach(layer => map.removeLayer(layer));
+            activeLayers = [];
+
+            if (!path || path.length < 2) return alert("Esta viagem não registrou trajeto.");
+
+            // Desenha a Linha (Path) que veio do Banco de Dados
+            const line = L.polyline(path, { color: '#f39c12', weight: 6, opacity: 0.8 }).addTo(map);
+            const startMarker = L.circleMarker(path[0], { radius: 6, color: '#27ae60', fillOpacity: 1 }).addTo(map);
+            const endMarker = L.circleMarker(path[path.length - 1], { radius: 6, color: '#e74c3c', fillOpacity: 1 }).addTo(map);
+
+            activeLayers.push(line, startMarker, endMarker);
+            map.fitBounds(line.getBounds(), { padding: [50, 50] });
+        }
+    </script>
+</body>
+</html>
