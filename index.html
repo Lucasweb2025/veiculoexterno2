@@ -7,10 +7,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=2">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png?v=2">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
     
-    <title>L.A. CONTROLE V.28</title>
+    <title>L.A. CONTROLE V.29</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
@@ -19,16 +19,15 @@
         .bg { position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); z-index: 0; }
         .container { display: flex; flex-direction: column; height: 100dvh; padding: 20px; box-sizing: border-box; align-items: center; z-index: 1; position: relative; }
         .header { width: 100%; text-align: center; padding: 10px 0; margin-bottom: 10px; }
-        .logo { height: 65px; filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4)); }
+        .logo { height: 60px; filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4)); }
         #tela-login { justify-content: center; }
         .login-box { width: 100%; max-width: 300px; text-align: center; }
-        .input-login { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.1rem; width: 100%; box-sizing: border-box; }
+        .input-login { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.1rem; box-sizing: border-box; }
         .selector { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden;}
         .car-visual { max-width: 90%; max-height: 160px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); border-radius: 15px; }
         .driver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin: 15px 0; }
         .driver-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; }
         .driver-card.selected { border-color: var(--orange); background: rgba(243, 156, 18, 0.2); }
-        #outro-nome { background: none; border: 1px solid var(--orange); color: white; padding: 12px; border-radius: 10px; width: 100%; margin-top: 10px; display: none; text-align: center; box-sizing: border-box; }
         .btn { width: 100%; max-width: 300px; padding: 16px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; cursor: pointer; }
         .btn-start { background: #27ae60; border: none; color: white; margin-top: 10px; }
         .btn-stop { background: #c0392b; border: none; color: white; margin-top: 10px; }
@@ -36,7 +35,8 @@
         .stats { width: 100%; display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; }
         .stat b { display: block; font-size: 1.3rem; color: var(--orange); }
         .history-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; border-left: 5px solid var(--orange); width: 100%; box-sizing: border-box; }
-        .mini-map { width: 100%; height: 140px; border-radius: 10px; margin-top: 10px; }
+        .mini-map { width: 100%; height: 160px; border-radius: 10px; margin-top: 10px; background: #111; }
+        #debug-gps { font-size: 0.6rem; color: #888; margin-top: 2px; }
     </style>
 </head>
 <body onload="verificarSessao()">
@@ -74,7 +74,7 @@
                 <div class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
             </div>
             <div class="driver-card" style="width: 100%;" onclick="setDriver(this, 'Outros')">Outros</div>
-            <input type="text" id="outro-nome" placeholder="Nome Completo">
+            <input type="text" id="outro-nome" placeholder="Nome Completo" style="display:none; background:none; border:1px solid var(--orange); color:white; padding:12px; border-radius:10px; width:100%; margin-top:10px; text-align:center;">
             <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
             <button onclick="location.reload()" style="background:none; border:none; color:#555; margin: 10px 0;">Voltar</button>
         </div>
@@ -85,6 +85,7 @@
                 <div class="stat"><small>TEMPO</small><b id="tempo">00:00</b></div>
             </div>
             <div id="map"></div>
+            <div id="debug-gps">Aguardando sinal GPS...</div>
             <button id="btn-master" class="btn btn-start" onclick="toggleTracking()">Iniciar Rastreio</button>
         </div>
 
@@ -92,14 +93,14 @@
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <button class="btn" style="background:#25d366; color:white; border:none; font-size:0.8rem; margin-bottom:15px;" onclick="sendDailyReport(true)">Enviar WhatsApp Hoje</button>
             <div id="lista-logs" style="width: 100%;"></div>
-            <button class="btn" onclick="location.reload()">Início</button>
+            <button class="btn" onclick="location.reload()" style="margin-top:20px;">Início</button>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
         const SENHA_MESTRA = "LACUSTOM2026"; 
-        const STORAGE_KEY = 'la_fleet_v28', TEMP_KEY = 'la_fleet_temp_v28';
+        const STORAGE_KEY = 'la_fleet_v29', TEMP_KEY = 'la_fleet_temp_v29';
 
         function validarLogin() {
             const digitada = document.getElementById('senha-acesso').value.trim().toUpperCase();
@@ -107,10 +108,7 @@
                 localStorage.setItem('sessao_la', 'ativa');
                 document.getElementById('tela-login').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
-            } else {
-                alert("Senha Incorreta!");
-                document.getElementById('senha-acesso').value = "";
-            }
+            } else { alert("Senha Incorreta!"); }
         }
 
         function verificarSessao() {
@@ -118,14 +116,12 @@
                 document.getElementById('tela-login').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
                 const lostTrip = localStorage.getItem(TEMP_KEY);
-                if(lostTrip) {
-                    if(confirm("Viagem interrompida detectada! Salvar?")) {
-                        const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                        logs.unshift(JSON.parse(lostTrip));
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-                        localStorage.removeItem(TEMP_KEY);
-                        location.reload();
-                    } else { localStorage.removeItem(TEMP_KEY); }
+                if(lostTrip && confirm("Viagem anterior detectada! Deseja salvar?")) {
+                    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                    logs.unshift(JSON.parse(lostTrip));
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+                    localStorage.removeItem(TEMP_KEY);
+                    location.reload();
                 }
             }
         }
@@ -135,10 +131,7 @@
             document.getElementById(proxima).style.display = 'flex';
         }
 
-        const fleet = [
-            { id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },
-            { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
-        ];
+        const fleet = [{ id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },{ id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }];
         let idx = 0, driver = "", running = false, dist = 0, timer, startTime, path = [], watch, map, marker, startTimeStr = "";
 
         function mudar(n) { 
@@ -156,7 +149,7 @@
         }
 
         function initOperation() {
-            if (new Date().getHours() >= 19) return alert("Bloqueado após 19h.");
+            if (new Date().getHours() >= 19) return alert("Rastreio bloqueado após 19h.");
             if (!driver) return alert("Selecione o motorista!");
             if (driver === 'Outros') {
                 driver = document.getElementById('outro-nome').value.trim();
@@ -166,9 +159,9 @@
             if (!map) { 
                 map = L.map('map', { zoomControl: false, attributionControl: false }).setView([-23.55, -46.63], 16); 
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map); 
-                marker = L.circleMarker([0,0], {radius: 8, color: '#f39c12', fillOpacity: 1}).addTo(map);
+                marker = L.circleMarker([0,0], {radius: 9, color: '#f39c12', fillOpacity: 1, weight: 3}).addTo(map);
             }
-            setTimeout(() => map.invalidateSize(), 300);
+            setTimeout(() => map.invalidateSize(), 400);
         }
 
         function toggleTracking() {
@@ -186,25 +179,38 @@
                 }, 1000);
 
                 watch = navigator.geolocation.watchPosition(p => {
-                    if (p.coords.accuracy > 80) return;
+                    const accuracy = p.coords.accuracy;
+                    document.getElementById('debug-gps').innerText = `Precisão: ${accuracy.toFixed(1)}m | Pontos: ${path.length}`;
+                    
+                    if (accuracy > 90) return; 
+
                     const pos = [p.coords.latitude, p.coords.longitude];
-                    if (path.length > 0) dist += L.latLng(path[path.length - 1]).distanceTo(pos);
-                    path.push(pos); marker.setLatLng(pos); map.flyTo(pos, 17);
+                    if (path.length > 0) {
+                        const lastPos = path[path.length - 1];
+                        dist += L.latLng(lastPos).distanceTo(pos);
+                    }
+                    path.push(pos);
+                    marker.setLatLng(pos);
+                    map.flyTo(pos, 17);
                     document.getElementById('km').innerText = (dist / 1000).toFixed(2);
-                }, null, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
+                }, (e) => { document.getElementById('debug-gps').innerText = "Erro: " + e.message; }, 
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
             } else { fecharCorrida(); }
         }
 
         function fecharCorrida() {
             if (watch) navigator.geolocation.clearWatch(watch);
             clearInterval(timer);
-            const finalData = JSON.parse(localStorage.getItem(TEMP_KEY));
-            if(finalData) {
-                finalData.status = 'finalizada';
-                const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                logs.unshift(finalData);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-            }
+            const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const finalData = { 
+                car: fleet[idx].nome, user: driver, 
+                km: (dist/1000).toFixed(2), 
+                time: document.getElementById('tempo').innerText, 
+                date: new Date().toLocaleDateString('pt-BR'), 
+                start: startTimeStr, track: path, status: 'finalizada' 
+            };
+            logs.unshift(finalData);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
             localStorage.removeItem(TEMP_KEY);
             location.reload();
         }
@@ -212,8 +218,31 @@
         function viewHistory() {
             proximaTela('tela-veiculo', 'tela-logs');
             const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            document.getElementById('lista-logs').innerHTML = logs.map((l, i) => `<div class="history-card"><b>${l.car} - ${l.user}</b><br>${l.km} km em ${l.time}<br><small>${l.date} - ${l.start}</small><div id="map-${i}" class="mini-map"></div></div>`).join('');
-            logs.forEach((l, i) => { if (l.track && l.track.length > 1) { const m = L.map(`map-${i}`, { dragging: false, zoomControl: false, attributionControl: false }).setView(l.track[0], 15); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(m); L.polyline(l.track, {color: '#f39c12', weight: 4}).addTo(m); m.fitBounds(L.polyline(l.track).getBounds()); } });
+            const lista = document.getElementById('lista-logs');
+            
+            if (logs.length === 0) { lista.innerHTML = "<p style='text-align:center; opacity:0.5;'>Nenhum relatório salvo.</p>"; return; }
+
+            lista.innerHTML = logs.map((l, i) => `
+                <div class="history-card">
+                    <b>${l.car} - ${l.user}</b><br>
+                    📏 ${l.km} km | ⏱️ ${l.time}<br>
+                    <small>${l.date} - Saída: ${l.start}</small>
+                    <div id="map-${i}" class="mini-map"></div>
+                </div>`).join('');
+
+            setTimeout(() => {
+                logs.forEach((l, i) => {
+                    const mapDiv = document.getElementById(`map-${i}`);
+                    if (l.track && l.track.length > 1) {
+                        const m = L.map(`map-${i}`, { dragging: false, zoomControl: false, attributionControl: false, scrollWheelZoom: false }).setView(l.track[0], 15);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(m);
+                        L.polyline(l.track, {color: '#f39c12', weight: 5, opacity: 0.8}).addTo(m);
+                        m.fitBounds(L.polyline(l.track).getBounds(), {padding: [10, 10]});
+                    } else {
+                        mapDiv.innerHTML = "<p style='padding:20px; font-size:0.7rem; text-align:center; opacity:0.3;'>Trajeto curto demais para gerar mapa.</p>";
+                    }
+                });
+            }, 500);
         }
 
         function sendDailyReport(onlyToday) {
