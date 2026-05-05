@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Controle - L.A. Custom</title>
-    <!-- Tailwind CSS para um visual moderno sem precisar de arquivo CSS separado -->
+    <title>Painel L.A. Controle</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -13,10 +12,9 @@
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
 
-    <!-- Cabeçalho -->
     <header class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-10 shadow-lg">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold tracking-tight">L.A. <span class="text-blue-500">Custom</span></h1>
+            <h1 class="text-xl font-bold tracking-tight text-blue-500">L.A. Controle</h1>
             <button onclick="window.location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
                 Atualizar
             </button>
@@ -27,83 +25,71 @@
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-lg font-semibold text-gray-400">Veículos no Pátio</h2>
             <span id="contador" class="bg-gray-800 text-blue-400 px-3 py-1 rounded-full text-xs font-bold border border-blue-500/30">
-                Carregando...
+                Sincronizando...
             </span>
         </div>
 
-        <!-- Lista de Veículos -->
         <div id="lista-veiculos" class="space-y-4">
-            <!-- Os cards dos veículos entrarão aqui via JavaScript -->
-            <div class="animate-pulse flex space-x-4">
-                <div class="flex-1 space-y-4 py-1">
-                    <div class="h-4 bg-gray-700 rounded w-3/4"></div>
-                    <div class="space-y-2">
-                        <div class="h-4 bg-gray-700 rounded"></div>
-                        <div class="h-4 bg-gray-700 rounded w-5/6"></div>
-                    </div>
-                </div>
-            </div>
+            <p class="text-center text-gray-500 mt-10">Conectando ao Realtime Database...</p>
         </div>
     </main>
 
-    <!-- Scripts do Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // IMPORTANTE: Substitua pelos dados do seu projeto Firebase
+        // Suas chaves confirmadas na imagem anterior
         const firebaseConfig = {
-            apiKey: "SUA_API_KEY",
-            authDomain: "SEU_PROJETO.firebaseapp.com",
-            projectId: "SEU_PROJETO_ID",
-            storageBucket: "SEU_PROJETO.appspot.com",
-            messagingSenderId: "ID_MESSAGING",
-            appId: "SEU_APP_ID"
+            apiKey: "AIzaSyB4wDK8VddBeO0rfndLd7LemSGDPupKjF0",
+            authDomain: "la-controle.firebaseapp.com",
+            databaseURL: "https://la-controle-default-rtdb.firebaseio.com",
+            projectId: "la-controle",
+            storageBucket: "la-controle.firebasestorage.app",
+            messagingSenderId: "847252305513",
+            appId: "1:847252305513:web:d2caa9b0404806ea8794f8"
         };
 
-        // Inicializa o Firebase
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        const db = getDatabase(app);
 
-        // Referência da coleção (use o mesmo nome que você usou no index.html)
-        const veiculosRef = collection(db, "veiculos");
-        const q = query(veiculosRef, orderBy("dataHora", "desc"));
+        // Referência exata ao nó "vehicles" que aparece na sua imagem
+        const veiculosRef = ref(db, 'vehicles');
 
-        // Função para atualizar a tela em tempo real
-        onSnapshot(q, (snapshot) => {
+        // Escuta os dados em tempo real
+        onValue(veiculosRef, (snapshot) => {
+            const data = snapshot.val();
             const listaElement = document.getElementById("lista-veiculos");
             const contadorElement = document.getElementById("contador");
             
             listaElement.innerHTML = "";
-            contadorElement.innerText = `${snapshot.size} VEÍCULOS`;
-
-            if (snapshot.empty) {
-                listaElement.innerHTML = `<p class="text-center text-gray-500 mt-10">Nenhum veículo encontrado no momento.</p>`;
+            
+            if (!data) {
+                contadorElement.innerText = "0 VEÍCULOS";
+                listaElement.innerHTML = `<p class="text-center text-gray-500 mt-10">Nenhum veículo encontrado no nó "vehicles".</p>`;
                 return;
             }
 
-            snapshot.forEach((doc) => {
-                const v = doc.data();
-                const dataFormatada = v.dataHora ? new Date(v.dataHora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--';
+            // Transforma o objeto do Firebase em uma lista
+            const entries = Object.entries(data);
+            contadorElement.innerText = `${entries.length} REGISTROS`;
 
+            entries.reverse().forEach(([id, v]) => {
                 const card = `
-                    <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-sm hover:border-blue-500/50 transition">
+                    <div class="bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-sm">
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="text-blue-500 font-bold text-lg tracking-wider">${v.placa ? v.placa.toUpperCase() : 'SEM PLACA'}</div>
                                 <div class="text-gray-100 font-medium text-base">${v.modelo || 'Modelo não informado'}</div>
-                                <div class="text-gray-500 text-xs mt-1">Entrada: ${dataFormatada}</div>
-                            </div>
-                            <div class="flex flex-col items-end">
-                                <span class="px-2 py-1 bg-green-500/10 text-green-500 rounded text-[10px] font-bold uppercase tracking-widest border border-green-500/20">
-                                    No Pátio
-                                </span>
+                                <div class="text-gray-500 text-xs mt-1">Status: ${v.status || 'Registrado'}</div>
                             </div>
                         </div>
                     </div>
                 `;
                 listaElement.innerHTML += card;
             });
+        }, (error) => {
+            console.error(error);
+            document.getElementById("lista-veiculos").innerHTML = `<p class="text-center text-red-500 mt-10">Erro de conexão ou permissão.</p>`;
         });
     </script>
 </body>
