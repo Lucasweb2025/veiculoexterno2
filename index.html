@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
-    <title>L.A. TESTE - ACESSO DIRETO</title>
+    <title>L.A. TESTE - CORRIGIDO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -40,8 +40,8 @@
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <div class="selector">
                 <div id="car-render"></div>
-                <h2 id="car-name" style="color: var(--orange); font-size: 1.4rem; margin-top: 15px;">---</h2>
-                <div id="car-odo" class="odo-box">Carregando Odômetro...</div>
+                <h2 id="car-name" style="color: var(--orange); font-size: 1.4rem; margin-top: 15px;">Aguardando...</h2>
+                <div id="car-odo" class="odo-box">Odômetro: 0.00 km</div>
             </div>
             <div style="display: flex; gap: 50px; margin-bottom: 30px;">
                 <button onclick="mudar(-1)" style="background:none; border:none; color:white; font-size: 3rem;">❮</button>
@@ -59,7 +59,7 @@
                 <div id="card-Fabio" class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
             </div>
             <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
-            <button onclick="location.reload()" style="background:none; border:none; color:#888; margin: 15px 0;">Sair</button>
+            <button onclick="location.reload()" style="background:none; border:none; color:#888; margin: 15px 0;">Voltar</button>
         </div>
 
         <!-- MAPA / RASTREIO -->
@@ -94,23 +94,30 @@
 
         let idx = 0, driver = "", running = false, dist = 0, path = [], watch, map, marker, startTime, timer, wakeLock = null;[cite: 1]
 
-        // Função de bypass: Remove a tela de login e inicia o app diretamente
-        function iniciarApp() {
+        function iniciarApp() {[cite: 1]
             document.getElementById('app-content').style.display = 'block';
             mudar(0);
         }
 
         function mudar(n) {[cite: 1]
             idx = (idx + n + fleet.length) % fleet.length; 
+            
+            // Força a atualização visual ANTES da chamada do banco
             document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" class="car-visual">`; 
             document.getElementById('car-name').innerText = fleet[idx].nome;
+            document.getElementById('car-odo').innerText = "Odômetro: ...";
+
+            // Busca o odômetro com fallback para zero
             db.ref('vehicles/' + fleet[idx].id + '/odometer').on('value', s => {
-                document.getElementById('car-odo').innerText = `Odômetro: ${(s.val() || 0).toFixed(2)} km`;
+                const valor = s.val() || 0;
+                document.getElementById('car-odo').innerText = `Odômetro: ${valor.toFixed(2)} km`;
+            }, (error) => {
+                console.error("Erro Firebase:", error);
+                document.getElementById('car-odo').innerText = "Odômetro: 0.00 km (Offline)";
             });
         }
 
         function proximaTela(a, p) { document.getElementById(a).style.display = 'none'; document.getElementById(p).style.display = 'flex'; }
-        
         function setDriver(el, n) { 
             document.querySelectorAll('.driver-card').forEach(c => c.style.borderColor = 'rgba(255,255,255,0.1)');
             el.style.borderColor = 'var(--orange)'; driver = n; 
@@ -132,7 +139,7 @@
             if (!running) {
                 try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
 
-                running = true; btn.innerText = "Finalizar e Salvar"; btn.className = "btn btn-stop";
+                running = true; btn.innerText = "Finalizar Corrida"; btn.className = "btn btn-stop";
                 startTime = Date.now();
                 
                 const presenceRef = db.ref('vehicles/' + carId + '/status');
@@ -160,7 +167,7 @@
                         last_update: new Date().toLocaleString('pt-BR')
                     });
 
-                }, (err) => alert("Erro GPS: " + err.message), { enableHighAccuracy: true, maximumAge: 0 });
+                }, null, { enableHighAccuracy: true, maximumAge: 0 });
             } else { 
                 fecharCorrida(); 
             }
@@ -177,7 +184,7 @@
             db.ref('trips').push(trip)
             .then(() => {
                 db.ref('vehicles/' + fleet[idx].id + '/status').set("DISPONÍVEL");
-                return db.ref('vehicles/' + fleet[idx].id + '/odometer').transaction(c => (c || 0) + kmFinal);
+                return db.ref('vehicles/' + fleet[idx].id + '/odometer').transaction(c => (current || 0) + kmFinal);
             })
             .then(() => {
                 if (wakeLock) wakeLock.release();
