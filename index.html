@@ -3,69 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#f39c12">
+    <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
-    <title>L.A. TESTE - CORRIGIDO</title>
+    <title>L.A. CONTROLE V.32 - CLOUD</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
         :root { --orange: #f39c12; --dark: #000; --red: #e74c3c; --green: #27ae60; }
-        html, body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: -apple-system, system-ui, sans-serif; height: 100%; width: 100%; overflow: hidden; }
+        html, body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: -apple-system, sans-serif; height: 100%; width: 100%; overflow: hidden; }
         .bg { position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); z-index: 0; }
         .container { display: flex; flex-direction: column; height: 100dvh; padding: 20px; box-sizing: border-box; align-items: center; z-index: 1; position: relative; }
         .header { width: 100%; text-align: center; padding: 10px 0; }
         .logo { height: 60px; filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4)); }
+        .input-login { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.1rem; box-sizing: border-box; }
         .selector { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden;}
-        .car-visual { max-width: 90%; max-height: 160px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); border-radius: 15px; object-fit: contain; }
-        .odo-box { background: rgba(255,255,255,0.05); padding: 8px 20px; border-radius: 20px; font-size: 0.9rem; margin-top: 10px; border: 1px solid var(--orange); }
-        .btn { width: 100%; max-width: 320px; padding: 18px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 1rem; }
+        .car-visual { max-width: 90%; max-height: 160px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); border-radius: 15px; }
+        .odo-box { background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; margin-top: 10px; border: 1px solid var(--orange); }
+        .btn { width: 100%; max-width: 300px; padding: 16px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; cursor: pointer; }
         .btn-start { background: var(--green); border: none; color: white; margin-top: 10px; }
         .btn-stop { background: var(--red); border: none; color: white; margin-top: 10px; }
-        #map { width: 100%; flex-grow: 1; border-radius: 20px; margin: 15px 0; border: 1px solid rgba(255,255,255,0.1); }
-        .stats { width: 100%; display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; }
-        .stat b { display: block; font-size: 1.5rem; color: var(--orange); }
-        .driver-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; text-align: center; border: 2px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; width: 100%; }
+        .btn:disabled { opacity: 0.4; }
+        #map { width: 100%; flex-grow: 1; border-radius: 20px; margin: 10px 0; border: 1px solid rgba(255,255,255,0.1); }
+        .stats { width: 100%; display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; }
+        .stat b { display: block; font-size: 1.3rem; color: var(--orange); }
+        .driver-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; width: 100%; }
     </style>
 </head>
-<body onload="iniciarApp()">
+<body onload="verificarSessao()">
     <div class="bg"></div>
 
-    <div id="app-content">
+    <!-- TELA LOGIN -->
+    <div id="tela-login" class="container">
+        <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
+        <div class="login-box" style="text-align: center; width: 100%; max-width: 300px; margin-top: 50px;">
+            <h2 style="color: var(--orange); font-size: 1.1rem; margin-bottom: 20px;">L.A. PORTFÓLIO CLOUD</h2>
+            <input type="password" id="senha-acesso" class="input-login" placeholder="Senha Master">
+            <button class="btn" onclick="validarLogin()">Acessar Sistema</button>
+        </div>
+    </div>
+
+    <div id="app-content" style="display: none;">
         <!-- SELEÇÃO VEÍCULO -->
         <div id="tela-veiculo" class="container">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <div class="selector">
                 <div id="car-render"></div>
-                <h2 id="car-name" style="color: var(--orange); font-size: 1.4rem; margin-top: 15px;">Aguardando...</h2>
-                <div id="car-odo" class="odo-box">Odômetro: 0.00 km</div>
+                <h2 id="car-name" style="color: var(--orange); font-size: 1.2rem; margin-top: 10px;">---</h2>
+                <div id="car-odo" class="odo-box">Odômetro Cloud: 0.00 km</div>
             </div>
-            <div style="display: flex; gap: 50px; margin-bottom: 30px;">
-                <button onclick="mudar(-1)" style="background:none; border:none; color:white; font-size: 3rem;">❮</button>
-                <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 3rem;">❯</button>
+            <div style="display: flex; gap: 40px; margin-bottom: 20px;">
+                <button onclick="mudar(-1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❮</button>
+                <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❯</button>
             </div>
-            <button class="btn" onclick="proximaTela('tela-veiculo', 'tela-motorista')">Próximo</button>
+            <button class="btn" onclick="proximaTela('tela-veiculo', 'tela-motorista')">Selecionar Motorista</button>
         </div>
 
         <!-- MOTORISTA -->
         <div id="tela-motorista" class="container" style="display:none;">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
-            <h3 style="margin: 20px 0;">Identificação</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%;">
+            <h3 style="margin-bottom:20px;">Identificação</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
                 <div id="card-Marco" class="driver-card" onclick="setDriver(this, 'Marco')">Marco</div>
                 <div id="card-Fabio" class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
             </div>
             <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
-            <button onclick="location.reload()" style="background:none; border:none; color:#888; margin: 15px 0;">Voltar</button>
+            <button onclick="location.reload()" style="background:none; border:none; color:#555; margin: 10px 0;">Sair</button>
         </div>
 
-        <!-- MAPA / RASTREIO -->
+        <!-- MAPA -->
         <div id="tela-mapa" class="container" style="display:none;">
             <div class="stats">
-                <div class="stat"><small>DISTÂNCIA</small><b id="km">0.00</b><small>KM</small></div>
+                <div class="stat"><small>ESTA VIAGEM</small><b id="km">0.00</b><small>KM</small></div>
                 <div class="stat"><small>TEMPO</small><b id="tempo">00:00</b></div>
             </div>
             <div id="map"></div>
@@ -87,33 +99,37 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        const SENHA_MESTRA = "LACUSTOM2026";[cite: 1]
         const fleet = [[cite: 1]
             { id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },
             { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
         ];
 
-        let idx = 0, driver = "", running = false, dist = 0, path = [], watch, map, marker, startTime, timer, wakeLock = null;[cite: 1]
+        let idx = 0, driver = "", running = false, dist = 0, path = [], watch, map, marker, startTime, timer, wakeLock = null;
 
-        function iniciarApp() {[cite: 1]
-            document.getElementById('app-content').style.display = 'block';
-            mudar(0);
+        function validarLogin() {[cite: 1]
+            if(document.getElementById('senha-acesso').value.toUpperCase() === SENHA_MESTRA) {
+                localStorage.setItem('sessao_la_cloud', 'ativa');
+                document.getElementById('tela-login').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                mudar(0);
+            } else { alert("Senha Incorreta!"); }
+        }
+
+        function verificarSessao() {[cite: 1]
+            if(localStorage.getItem('sessao_la_cloud') === 'ativa') {
+                document.getElementById('tela-login').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                mudar(0);
+            }
         }
 
         function mudar(n) {[cite: 1]
             idx = (idx + n + fleet.length) % fleet.length; 
-            
-            // Força a atualização visual ANTES da chamada do banco
             document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" class="car-visual">`; 
             document.getElementById('car-name').innerText = fleet[idx].nome;
-            document.getElementById('car-odo').innerText = "Odômetro: ...";
-
-            // Busca o odômetro com fallback para zero
             db.ref('vehicles/' + fleet[idx].id + '/odometer').on('value', s => {
-                const valor = s.val() || 0;
-                document.getElementById('car-odo').innerText = `Odômetro: ${valor.toFixed(2)} km`;
-            }, (error) => {
-                console.error("Erro Firebase:", error);
-                document.getElementById('car-odo').innerText = "Odômetro: 0.00 km (Offline)";
+                document.getElementById('car-odo').innerText = `Odômetro Cloud: ${(s.val() || 0).toFixed(2)} km`;
             });
         }
 
@@ -142,9 +158,8 @@
                 running = true; btn.innerText = "Finalizar Corrida"; btn.className = "btn btn-stop";
                 startTime = Date.now();
                 
-                const presenceRef = db.ref('vehicles/' + carId + '/status');
-                presenceRef.onDisconnect().set("OFFLINE");
-                presenceRef.set("EM MOVIMENTO");
+                db.ref('vehicles/' + carId + '/status').onDisconnect().set("OFFLINE");
+                db.ref('vehicles/' + carId + '/status').set("EM MOVIMENTO");
 
                 timer = setInterval(() => {
                     const d = new Date(Date.now() - startTime);
@@ -154,46 +169,33 @@
                 watch = navigator.geolocation.watchPosition(p => {
                     const pos = [p.coords.latitude, p.coords.longitude];
                     if (path.length > 0) dist += L.latLng(path[path.length - 1]).distanceTo(pos);
-                    path.push(pos); 
-                    marker.setLatLng(pos); 
-                    map.flyTo(pos, 17);
+                    path.push(pos); marker.setLatLng(pos); map.flyTo(pos, 17);
                     document.getElementById('km').innerText = (dist / 1000).toFixed(2);
 
                     db.ref('vehicles/' + carId + '/last_pos').set({
-                        lat: p.coords.latitude,
-                        lng: p.coords.longitude,
-                        driver: driver,
-                        km_atual: (dist / 1000).toFixed(2),
+                        lat: p.coords.latitude, lng: p.coords.longitude,
+                        driver, km_atual: (dist / 1000).toFixed(2),
                         last_update: new Date().toLocaleString('pt-BR')
                     });
-
-                }, null, { enableHighAccuracy: true, maximumAge: 0 });
-            } else { 
-                fecharCorrida(); 
-            }
+                }, null, { enableHighAccuracy: true });
+            } else { fecharCorrida(); }
         }
 
         function fecharCorrida() {[cite: 1]
             const btn = document.getElementById('btn-master');
-            btn.disabled = true;
-            btn.innerText = "Sincronizando...";
+            btn.disabled = true; btn.innerText = "Sincronizando...";
 
             const kmFinal = parseFloat((dist / 1000).toFixed(2));
             const trip = { car: fleet[idx].nome, driver, km: kmFinal, time: document.getElementById('tempo').innerText, date: new Date().toLocaleString('pt-BR'), path };
 
-            db.ref('trips').push(trip)
-            .then(() => {
+            db.ref('trips').push(trip).then(() => {
                 db.ref('vehicles/' + fleet[idx].id + '/status').set("DISPONÍVEL");
-                return db.ref('vehicles/' + fleet[idx].id + '/odometer').transaction(c => (current || 0) + kmFinal);
-            })
-            .then(() => {
+                return db.ref('vehicles/' + fleet[idx].id + '/odometer').transaction(c => (c || 0) + kmFinal);
+            }).then(() => {
                 if (wakeLock) wakeLock.release();
-                alert("Viagem salva!"); 
-                location.reload();
-            })
-            .catch(() => {
-                alert("Erro ao salvar finalização.");
-                btn.disabled = false;
+                alert("Viagem salva!"); location.reload();
+            }).catch(() => {
+                alert("Erro ao salvar finalização."); btn.disabled = false;
             });
         }
     </script>
