@@ -3,80 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#f39c12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
-    <title>L.A. CONTROLE V.32 - CLOUD</title>
+    <title>L.A. CONTROLE V.26 - ESTÁVEL</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        :root { --orange: #f39c12; --dark: #000; --red: #e74c3c; --green: #27ae60; }
-        html, body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: -apple-system, sans-serif; height: 100%; width: 100%; overflow: hidden; }
+        :root { --orange: #f39c12; --dark: #000; --red: #e74c3c; --green: #27ae60; --gray: #2c2c2c; }
+        html, body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: -apple-system, system-ui, sans-serif; height: 100%; width: 100%; overflow: hidden; }
         .bg { position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); z-index: 0; }
         .container { display: flex; flex-direction: column; height: 100dvh; padding: 20px; box-sizing: border-box; align-items: center; z-index: 1; position: relative; }
         .header { width: 100%; text-align: center; padding: 10px 0; }
         .logo { height: 60px; filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4)); }
-        .input-login { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.1rem; box-sizing: border-box; }
+        .input-login { width: 100%; padding: 18px; border-radius: 12px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.2rem; box-sizing: border-box; }
         .selector { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden;}
-        .car-visual { max-width: 90%; max-height: 160px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); border-radius: 15px; }
-        .odo-box { background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; margin-top: 10px; border: 1px solid var(--orange); }
-        .btn { width: 100%; max-width: 300px; padding: 16px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; cursor: pointer; }
+        .car-visual { max-width: 90%; max-height: 160px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); border-radius: 15px; object-fit: contain; }
+        .odo-box { background: rgba(255,255,255,0.05); padding: 8px 20px; border-radius: 20px; font-size: 0.9rem; margin-top: 10px; border: 1px solid var(--orange); }
+        .btn { width: 100%; max-width: 320px; padding: 18px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 1rem; transition: 0.3s; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-start { background: var(--green); border: none; color: white; margin-top: 10px; }
         .btn-stop { background: var(--red); border: none; color: white; margin-top: 10px; }
-        #map { width: 100%; flex-grow: 1; border-radius: 20px; margin: 10px 0; border: 1px solid rgba(255,255,255,0.1); }
-        .stats { width: 100%; display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; }
-        .stat b { display: block; font-size: 1.3rem; color: var(--orange); }
-        .driver-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; width: 100%; }
+        #map { width: 100%; flex-grow: 1; border-radius: 20px; margin: 15px 0; border: 1px solid rgba(255,255,255,0.1); z-index: 5; }
+        .stats { width: 100%; display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); }
+        .stat b { display: block; font-size: 1.5rem; color: var(--orange); line-height: 1.2; }
+        .driver-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; text-align: center; border: 2px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; width: 100%; font-size: 1.1rem; }
     </style>
 </head>
 <body onload="verificarSessao()">
     <div class="bg"></div>
 
-    <!-- LOGIN -->
+    <!-- TELA LOGIN -->
     <div id="tela-login" class="container">
-        <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
-        <div class="login-box" style="text-align: center; width: 100%; max-width: 300px;">
-            <h2 style="color: var(--orange); font-size: 1.1rem; margin-bottom: 20px;">L.A. PORTFÓLIO CLOUD</h2>
-            <input type="text" id="senha-acesso" class="input-login" placeholder="Senha Master">
-            <button class="btn" onclick="validarLogin()">Acessar Sistema</button>
+        <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo" alt="Logo"></div>
+        <div style="text-align: center; width: 100%; max-width: 300px; margin-top: auto; margin-bottom: auto;">
+            <h2 style="color: var(--orange); font-size: 1.1rem; margin-bottom: 25px; letter-spacing: 2px;">SISTEMA DE FROTA CLOUD</h2>
+            <input type="password" id="senha-acesso" class="input-login" placeholder="Senha Master">
+            <button class="btn" onclick="validarLogin()">Entrar</button>
         </div>
     </div>
 
     <div id="app-content" style="display: none;">
-        <!-- SELEÇÃO VEÍCULO -->
+        <!-- TELA SELEÇÃO VEÍCULO -->
         <div id="tela-veiculo" class="container">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <div class="selector">
                 <div id="car-render"></div>
-                <h2 id="car-name" style="color: var(--orange); font-size: 1.2rem; margin-top: 10px;">---</h2>
-                <div id="car-odo" class="odo-box">Odômetro Cloud: 0.00 km</div>
+                <h2 id="car-name" style="color: var(--orange); font-size: 1.4rem; margin-top: 15px;">---</h2>
+                <div id="car-odo" class="odo-box">Aguardando nuvem...</div>
             </div>
-            <div style="display: flex; gap: 40px; margin-bottom: 20px;">
-                <button onclick="mudar(-1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❮</button>
-                <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❯</button>
+            <div style="display: flex; gap: 50px; margin-bottom: 30px;">
+                <button onclick="mudar(-1)" style="background:none; border:none; color:white; font-size: 3rem; padding: 10px;">❮</button>
+                <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 3rem; padding: 10px;">❯</button>
             </div>
-            <button class="btn" onclick="proximaTela('tela-veiculo', 'tela-motorista')">Selecionar Motorista</button>
+            <button class="btn" onclick="proximaTela('tela-veiculo', 'tela-motorista')">Próximo</button>
         </div>
 
-        <!-- MOTORISTA -->
+        <!-- TELA MOTORISTA -->
         <div id="tela-motorista" class="container" style="display:none;">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
-            <h3 style="margin-bottom:20px;">Identificação</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
+            <h3 style="margin: 20px 0; color: var(--orange);">Quem está dirigindo?</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%;">
                 <div id="card-Marco" class="driver-card" onclick="setDriver(this, 'Marco')">Marco</div>
                 <div id="card-Fabio" class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
             </div>
             <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
-            <button onclick="location.reload()" style="background:none; border:none; color:#555; margin: 10px 0;">Voltar</button>
+            <button onclick="location.reload()" style="background:none; border:none; color:#888; margin: 20px 0; font-size: 0.9rem;">Cancelar e Voltar</button>
         </div>
 
-        <!-- MAPA -->
+        <!-- TELA MAPA / RASTREIO -->
         <div id="tela-mapa" class="container" style="display:none;">
             <div class="stats">
-                <div class="stat"><small>ESTA VIAGEM</small><b id="km">0.00</b><small>KM</small></div>
+                <div class="stat"><small>DISTÂNCIA</small><b id="km">0.00</b><small>KM</small></div>
                 <div class="stat"><small>TEMPO</small><b id="tempo">00:00</b></div>
             </div>
             <div id="map"></div>
@@ -86,6 +87,7 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
+        // CONFIGURAÇÃO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyB4wDK8VddBeOOrfndLd7LemSGDPupKjF0",
             authDomain: "la-controle.firebaseapp.com",
@@ -98,15 +100,15 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const SENHA_MESTRA = "LACUSTOM2026";
-        const fleet = [
+        const SENHA_MESTRA = "LACUSTOM2026"; //
+        const fleet = [ //
             { id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },
             { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
         ];
 
         let idx = 0, driver = "", running = false, dist = 0, path = [], watch, map, marker, startTime, timer;
 
-        function validarLogin() {
+        function validarLogin() { //
             if(document.getElementById('senha-acesso').value.toUpperCase() === SENHA_MESTRA) {
                 localStorage.setItem('sessao_la_cloud', 'ativa');
                 document.getElementById('tela-login').style.display = 'none';
@@ -114,30 +116,34 @@
             } else { alert("Senha Incorreta!"); }
         }
 
-        function verificarSessao() {
+        function verificarSessao() { //[cite: 1]
             if(localStorage.getItem('sessao_la_cloud') === 'ativa') {
                 document.getElementById('tela-login').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
             }
         }
 
-        function mudar(n) { 
+        function mudar(n) { //[cite: 1]
             idx = (idx + n + fleet.length) % fleet.length; 
             document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" class="car-visual">`; 
             document.getElementById('car-name').innerText = fleet[idx].nome;
             db.ref('vehicles/' + fleet[idx].id + '/odometer').on('value', s => {
-                document.getElementById('car-odo').innerText = `Odômetro Cloud: ${(s.val() || 0).toFixed(2)} km`;
+                document.getElementById('car-odo').innerText = `Total Acumulado: ${(s.val() || 0).toFixed(2)} km`;
             });
         }
         mudar(0);
 
-        function proximaTela(a, p) { document.getElementById(a).style.display = 'none'; document.getElementById(p).style.display = 'flex'; }
-        function setDriver(el, n) { 
+        function proximaTela(a, p) { //[cite: 1]
+            document.getElementById(a).style.display = 'none'; 
+            document.getElementById(p).style.display = 'flex'; 
+        }
+
+        function setDriver(el, n) { //[cite: 1]
             document.querySelectorAll('.driver-card').forEach(c => c.style.borderColor = 'rgba(255,255,255,0.1)');
             el.style.borderColor = 'var(--orange)'; driver = n; 
         }
 
-        function initOperation() {
+        function initOperation() { //[cite: 1]
             if (!driver) return alert("Selecione o motorista!");
             proximaTela('tela-motorista', 'tela-mapa');
             map = L.map('map', { zoomControl: false }).setView([-23.55, -46.63], 16); 
@@ -146,10 +152,12 @@
             setTimeout(() => map.invalidateSize(), 400);
         }
 
-        function toggleTracking() {
+        function toggleTracking() { //[cite: 1]
             const btn = document.getElementById('btn-master');
             if (!running) {
-                running = true; btn.innerText = "Finalizar Corrida"; btn.className = "btn btn-stop";
+                running = true; 
+                btn.innerText = "Finalizar e Salvar"; 
+                btn.className = "btn btn-stop";
                 startTime = Date.now();
                 timer = setInterval(() => {
                     const d = new Date(Date.now() - startTime);
@@ -158,20 +166,63 @@
 
                 watch = navigator.geolocation.watchPosition(p => {
                     const pos = [p.coords.latitude, p.coords.longitude];
-                    if (path.length > 0) dist += L.latLng(path[path.length - 1]).distanceTo(pos);
-                    path.push(pos); marker.setLatLng(pos); map.flyTo(pos, 17);
+                    if (path.length > 0) {
+                        const d = L.latLng(path[path.length - 1]).distanceTo(pos);
+                        if(d > 5) dist += d; // Filtro de ruído do GPS
+                    }
+                    path.push(pos); 
+                    marker.setLatLng(pos); 
+                    map.flyTo(pos, 17);
                     document.getElementById('km').innerText = (dist / 1000).toFixed(2);
-                }, null, { enableHighAccuracy: true });
-            } else { fecharCorrida(); }
+                }, (err) => {
+                    console.error("Erro GPS:", err);
+                    alert("Erro no GPS! Verifique se a localização está ativa.");
+                }, { enableHighAccuracy: true, maximumAge: 0 });
+            } else { 
+                fecharCorrida(); 
+            }
         }
 
-        function fecharCorrida() {
-            const km = parseFloat((dist / 1000).toFixed(2));
-            db.ref('trips').push({ car: fleet[idx].nome, driver, km, time: document.getElementById('tempo').innerText, date: new Date().toLocaleString('pt-BR'), path })
+        function fecharCorrida() { //[cite: 1] - CORREÇÃO DO BUG DE FECHAMENTO
+            const btn = document.getElementById('btn-master');
+            btn.disabled = true;
+            btn.innerText = "Enviando Dados...";
+
+            const kmTotalViagem = parseFloat((dist / 1000).toFixed(2));
+            const tripData = {
+                car: fleet[idx].nome,
+                driver: driver,
+                km: kmTotalViagem,
+                time: document.getElementById('tempo').innerText,
+                date: new Date().toLocaleString('pt-BR'),
+                path: path
+            };
+
+            // 1. Salva a viagem[cite: 1]
+            db.ref('trips').push(tripData)
             .then(() => {
-                db.ref('vehicles/' + fleet[idx].id + '/odometer').transaction(c => (c || 0) + km);
-                alert("Viagem salva!"); location.reload();
+                // 2. Atualiza o odômetro do veículo via transação para evitar erro de concorrência[cite: 1]
+                return db.ref('vehicles/' + fleet[idx].id + '/odometer').transaction(current => (current || 0) + kmTotalViagem);
+            })
+            .then(() => {
+                alert("✅ Sucesso! Viagem registrada e odômetro atualizado.");
+                location.reload();
+            })
+            .catch(error => {
+                console.error("Falha ao fechar:", error);
+                alert("❌ ERRO AO SALVAR! Verifique sua internet. Detalhe: " + error.message);
+                btn.disabled = false;
+                btn.innerText = "Tentar Novamente";
             });
+        }
+    </script>
+
+    <!-- REGISTRO DO SERVICE WORKER PARA PWA[cite: 4] -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+            .then(() => console.log("L.A. Cloud: Service Worker Pronto"))
+            .catch(err => console.log("Erro SW:", err));
         }
     </script>
 </body>
