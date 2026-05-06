@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
-    <title>L.A. CONTROLE V.26 - AUTO-SAVE</title>
+    <title>L.A. TESTE - ACESSO DIRETO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -19,12 +19,10 @@
         .container { display: flex; flex-direction: column; height: 100dvh; padding: 20px; box-sizing: border-box; align-items: center; z-index: 1; position: relative; }
         .header { width: 100%; text-align: center; padding: 10px 0; }
         .logo { height: 60px; filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4)); }
-        .input-login { width: 100%; padding: 18px; border-radius: 12px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.2rem; box-sizing: border-box; }
         .selector { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden;}
         .car-visual { max-width: 90%; max-height: 160px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); border-radius: 15px; object-fit: contain; }
         .odo-box { background: rgba(255,255,255,0.05); padding: 8px 20px; border-radius: 20px; font-size: 0.9rem; margin-top: 10px; border: 1px solid var(--orange); }
         .btn { width: 100%; max-width: 320px; padding: 18px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; cursor: pointer; font-size: 1rem; }
-        .btn:disabled { opacity: 0.4; }
         .btn-start { background: var(--green); border: none; color: white; margin-top: 10px; }
         .btn-stop { background: var(--red); border: none; color: white; margin-top: 10px; }
         #map { width: 100%; flex-grow: 1; border-radius: 20px; margin: 15px 0; border: 1px solid rgba(255,255,255,0.1); }
@@ -33,33 +31,26 @@
         .driver-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; text-align: center; border: 2px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; width: 100%; }
     </style>
 </head>
-<body onload="verificarSessao()">
+<body onload="iniciarApp()">
     <div class="bg"></div>
 
-    <div id="tela-login" class="container">
-        <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
-        <div style="text-align: center; width: 100%; max-width: 300px; margin-top: auto; margin-bottom: auto;">
-            <h2 style="color: var(--orange); font-size: 1.1rem; margin-bottom: 25px;">SISTEMA L.A. CLOUD</h2>
-            <input type="password" id="senha-acesso" class="input-login" placeholder="Senha Master">
-            <button class="btn" onclick="validarLogin()">Entrar</button>
-        </div>
-    </div>
-
-    <div id="app-content" style="display: none;">
+    <div id="app-content">
+        <!-- SELEÇÃO VEÍCULO -->
         <div id="tela-veiculo" class="container">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <div class="selector">
                 <div id="car-render"></div>
                 <h2 id="car-name" style="color: var(--orange); font-size: 1.4rem; margin-top: 15px;">---</h2>
-                <div id="car-odo" class="odo-box">Aguardando...</div>
+                <div id="car-odo" class="odo-box">Carregando Odômetro...</div>
             </div>
             <div style="display: flex; gap: 50px; margin-bottom: 30px;">
                 <button onclick="mudar(-1)" style="background:none; border:none; color:white; font-size: 3rem;">❮</button>
                 <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 3rem;">❯</button>
             </div>
-            <button class="btn" onclick="proximaTela('tela-veiculo', 'tela-motorista')">Selecionar Motorista</button>
+            <button class="btn" onclick="proximaTela('tela-veiculo', 'tela-motorista')">Próximo</button>
         </div>
 
+        <!-- MOTORISTA -->
         <div id="tela-motorista" class="container" style="display:none;">
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <h3 style="margin: 20px 0;">Identificação</h3>
@@ -68,9 +59,10 @@
                 <div id="card-Fabio" class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
             </div>
             <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
-            <button onclick="location.reload()" style="background:none; border:none; color:#888; margin: 15px 0;">Voltar</button>
+            <button onclick="location.reload()" style="background:none; border:none; color:#888; margin: 15px 0;">Sair</button>
         </div>
 
+        <!-- MAPA / RASTREIO -->
         <div id="tela-mapa" class="container" style="display:none;">
             <div class="stats">
                 <div class="stat"><small>DISTÂNCIA</small><b id="km">0.00</b><small>KM</small></div>
@@ -95,7 +87,6 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const SENHA_MESTRA = "LACUSTOM2026";[cite: 1]
         const fleet = [[cite: 1]
             { id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },
             { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
@@ -103,19 +94,10 @@
 
         let idx = 0, driver = "", running = false, dist = 0, path = [], watch, map, marker, startTime, timer, wakeLock = null;[cite: 1]
 
-        function validarLogin() {[cite: 1]
-            if(document.getElementById('senha-acesso').value.toUpperCase() === SENHA_MESTRA) {
-                localStorage.setItem('sessao_la_cloud', 'ativa');
-                document.getElementById('tela-login').style.display = 'none';
-                document.getElementById('app-content').style.display = 'block';
-            } else { alert("Senha Incorreta!"); }
-        }
-
-        function verificarSessao() {[cite: 1]
-            if(localStorage.getItem('sessao_la_cloud') === 'ativa') {
-                document.getElementById('tela-login').style.display = 'none';
-                document.getElementById('app-content').style.display = 'block';
-            }
+        // Função de bypass: Remove a tela de login e inicia o app diretamente
+        function iniciarApp() {
+            document.getElementById('app-content').style.display = 'block';
+            mudar(0);
         }
 
         function mudar(n) {[cite: 1]
@@ -126,9 +108,9 @@
                 document.getElementById('car-odo').innerText = `Odômetro: ${(s.val() || 0).toFixed(2)} km`;
             });
         }
-        mudar(0);
 
         function proximaTela(a, p) { document.getElementById(a).style.display = 'none'; document.getElementById(p).style.display = 'flex'; }
+        
         function setDriver(el, n) { 
             document.querySelectorAll('.driver-card').forEach(c => c.style.borderColor = 'rgba(255,255,255,0.1)');
             el.style.borderColor = 'var(--orange)'; driver = n; 
@@ -153,8 +135,6 @@
                 running = true; btn.innerText = "Finalizar e Salvar"; btn.className = "btn btn-stop";
                 startTime = Date.now();
                 
-                // RECURSO 2026: onDisconnect
-                // Se o app fechar, o Firebase marca o veículo como "OFFLINE" e salva a última posição conhecida.
                 const presenceRef = db.ref('vehicles/' + carId + '/status');
                 presenceRef.onDisconnect().set("OFFLINE");
                 presenceRef.set("EM MOVIMENTO");
@@ -172,7 +152,6 @@
                     map.flyTo(pos, 17);
                     document.getElementById('km').innerText = (dist / 1000).toFixed(2);
 
-                    // SALVAMENTO EM TEMPO REAL (Segurança contra fechamento inesperado)
                     db.ref('vehicles/' + carId + '/last_pos').set({
                         lat: p.coords.latitude,
                         lng: p.coords.longitude,
@@ -181,7 +160,7 @@
                         last_update: new Date().toLocaleString('pt-BR')
                     });
 
-                }, null, { enableHighAccuracy: true, maximumAge: 0 });
+                }, (err) => alert("Erro GPS: " + err.message), { enableHighAccuracy: true, maximumAge: 0 });
             } else { 
                 fecharCorrida(); 
             }
@@ -202,22 +181,14 @@
             })
             .then(() => {
                 if (wakeLock) wakeLock.release();
-                alert("Viagem Finalizada!"); 
+                alert("Viagem salva!"); 
                 location.reload();
             })
             .catch(() => {
-                alert("Erro de conexão. A última posição foi salva automaticamente.");
+                alert("Erro ao salvar finalização.");
                 btn.disabled = false;
             });
         }
-
-        // CAPTURA FECHAMENTO DE ABA/APP (Tentativa de melhor esforço)
-        window.addEventListener('pagehide', () => {
-            if (running) {
-                const carId = fleet[idx].id;
-                db.ref('vehicles/' + carId + '/status').set("FECHADO INESPERADAMENTE");
-            }
-        });
     </script>
 </body>
 </html>
