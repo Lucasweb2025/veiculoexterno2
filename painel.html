@@ -16,35 +16,49 @@
         .modal-overlay { background: rgba(0,0,0,0.9); display: none; position: fixed; top:0; left:0; width:100%; height:100%; z-index: 100; align-items: center; justify-content: center; padding: 20px; }
     </style>
 </head>
-<body class="min-h-screen p-4">
+<body class="min-h-screen">
 
-    <!-- Modal do Mapa (Oculto por padrão) -->
-    <div id="overlay" class="modal-overlay">
-        <div class="w-full max-w-2xl bg-zinc-900 p-6 rounded-3xl relative">
-            <button onclick="fecharMapa()" class="absolute -top-10 right-0 text-white font-bold uppercase text-xs">Fechar [X]</button>
-            <h3 id="modal-titulo" class="text-[--orange] font-black uppercase mb-4 italic">Trajeto da Viagem</h3>
-            <div id="mapa-modal"></div>
+    <!-- TELA DE LOGIN -->
+    <div id="painel-login" class="flex items-center justify-center min-h-screen p-4">
+        <div class="text-center w-full max-w-xs">
+            <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="h-16 mx-auto mb-6" style="filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4));">
+            <h2 class="text-[--orange] text-sm font-black uppercase tracking-wider mb-6">Painel de Gestão</h2>
+            <input type="password" id="senha-painel" placeholder="Senha Master" onkeypress="if(event.key==='Enter') loginPainel()"
+                class="w-full p-4 rounded-xl border border-[--orange] bg-white/5 text-white text-center text-lg mb-4 outline-none">
+            <button onclick="loginPainel()" class="w-full p-4 rounded-full border-2 border-[--orange] text-[--orange] font-bold uppercase tracking-wider hover:bg-[--orange] hover:text-black transition-all">Acessar</button>
         </div>
     </div>
 
-    <header class="max-w-5xl mx-auto mb-8 flex justify-between items-center border-b border-white/10 pb-6">
-        <div>
-            <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="h-10 mb-2">
-            <h1 class="text-[--orange] font-black text-sm uppercase tracking-tighter italic">Gestão de Telemetria</h1>
-        </div>
-        <button onclick="window.location.reload()" class="bg-zinc-900 border border-white/10 px-4 py-2 rounded-xl text-xs font-bold">F5</button>
-    </header>
+    <!-- CONTEÚDO DO PAINEL -->
+    <div id="painel-content" class="p-4" style="display: none;">
 
-    <main class="max-w-3xl mx-auto space-y-6">
-        
-        <section>
-            <h2 class="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-4 ml-2">Histórico de Movimentação</h2>
-            <div id="lista-viagens" class="space-y-3">
-                <!-- Preenchido via Firebase -->
+        <!-- Modal do Mapa -->
+        <div id="overlay" class="modal-overlay">
+            <div class="w-full max-w-2xl bg-zinc-900 p-6 rounded-3xl relative">
+                <button onclick="fecharMapa()" class="absolute -top-10 right-0 text-white font-bold uppercase text-xs">Fechar [X]</button>
+                <h3 id="modal-titulo" class="text-[--orange] font-black uppercase mb-4 italic">Trajeto da Viagem</h3>
+                <div id="mapa-modal"></div>
             </div>
-        </section>
+        </div>
 
-    </main>
+        <header class="max-w-5xl mx-auto mb-8 flex justify-between items-center border-b border-white/10 pb-6">
+            <div>
+                <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="h-10 mb-2">
+                <h1 class="text-[--orange] font-black text-sm uppercase tracking-tighter italic">Gestão de Telemetria</h1>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="window.location.reload()" class="bg-zinc-900 border border-white/10 px-4 py-2 rounded-xl text-xs font-bold">F5</button>
+                <button onclick="logoutPainel()" class="bg-zinc-900 border border-red-500/30 text-red-400 px-4 py-2 rounded-xl text-xs font-bold">Sair</button>
+            </div>
+        </header>
+
+        <main class="max-w-3xl mx-auto space-y-6">
+            <section>
+                <h2 class="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-4 ml-2">Histórico de Movimentação</h2>
+                <div id="lista-viagens" class="space-y-3"></div>
+            </section>
+        </main>
+    </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
@@ -62,6 +76,36 @@
         const db = firebase.database();
         let map, polyline;
 
+        const SENHA_MESTRA = "LACUSTOM2026";
+        const tripCache = {};
+        const tripNames = {};
+
+        (function verificarSessaoPainel() {
+            if (localStorage.getItem('sessao_la_painel') === 'ativa') {
+                document.getElementById('painel-login').style.display = 'none';
+                document.getElementById('painel-content').style.display = 'block';
+            }
+        })();
+
+        function loginPainel() {
+            if (document.getElementById('senha-painel').value.trim().toUpperCase() === SENHA_MESTRA) {
+                localStorage.setItem('sessao_la_painel', 'ativa');
+                document.getElementById('painel-login').style.display = 'none';
+                document.getElementById('painel-content').style.display = 'block';
+            } else { alert("Senha Incorreta!"); }
+        }
+
+        function logoutPainel() {
+            localStorage.removeItem('sessao_la_painel');
+            location.reload();
+        }
+
+        function esc(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '---';
+            return d.innerHTML;
+        }
+
         db.ref('trips').on('value', (snapshot) => {
             const data = snapshot.val();
             const container = document.getElementById('lista-viagens');
@@ -70,23 +114,33 @@
             if (!data) return;
 
             Object.entries(data).reverse().forEach(([id, trip]) => {
-                const pathData = JSON.stringify(trip.path || []);
+                tripCache[id] = trip.path || [];
+                tripNames[id] = trip.car || '---';
+                const carName = esc(trip.car);
+                const driverName = esc(trip.driver);
+                const date = esc(trip.date);
+                const km = parseFloat(trip.km || 0).toFixed(2);
+
                 container.innerHTML += `
                     <div class="card border-l-2 border-l-zinc-700 hover:border-l-[--orange] transition-all">
                         <div class="flex justify-between items-center">
                             <div>
-                                <div class="text-[#f39c12] font-black text-lg">${trip.car || '---'}</div>
-                                <div class="text-white font-bold text-sm uppercase">${trip.driver}</div>
-                                <div class="text-zinc-500 text-[10px] mt-1">${trip.date}</div>
+                                <div class="text-[#f39c12] font-black text-lg">${carName}</div>
+                                <div class="text-white font-bold text-sm uppercase">${driverName}</div>
+                                <div class="text-zinc-500 text-[10px] mt-1">${date}</div>
                             </div>
                             <div class="text-right flex flex-col items-end gap-2">
-                                <div class="text-white font-black text-lg">+${trip.km} KM</div>
-                                <button onclick='abrirMapa(${pathData}, "${trip.car}")' class="bg-[--orange] text-black text-[10px] font-black px-3 py-1 rounded uppercase">Ver Rota</button>
+                                <div class="text-white font-black text-lg">+${km} KM</div>
+                                <button onclick="abrirMapaPorId('${id}')" class="bg-[--orange] text-black text-[10px] font-black px-3 py-1 rounded uppercase">Ver Rota</button>
                             </div>
                         </div>
                     </div>`;
             });
         });
+
+        function abrirMapaPorId(tripId) {
+            abrirMapa(tripCache[tripId] || [], tripNames[tripId] || '---');
+        }
 
         function abrirMapa(path, car) {
             document.getElementById('overlay').style.display = 'flex';
