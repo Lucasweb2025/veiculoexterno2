@@ -67,9 +67,11 @@
             <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
             <h3 style="margin-bottom:20px;">Identificação</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
-                <div id="card-Marco" class="driver-card" onclick="setDriver(this, 'Marco')">Marco</div>
-                <div id="card-Fabio" class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
+                <div class="driver-card" onclick="setDriver(this, 'Marco')">Marco</div>
+                <div class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
+                <div class="driver-card" onclick="setDriver(this, 'Outros')">Outros</div>
             </div>
+            <input type="text" id="outro-nome" placeholder="Digite o nome completo" style="display:none; background:none; border:1px solid var(--orange); color:white; padding:12px; border-radius:10px; width:100%; margin-top:10px; text-align:center; box-sizing:border-box; font-size:1rem;">
             <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
             <button onclick="location.reload()" style="background:none; border:none; color:#555; margin: 10px 0;">Sair</button>
         </div>
@@ -203,10 +205,25 @@
 
         function setDriver(el, n) {
             document.querySelectorAll('.driver-card').forEach(c => c.style.borderColor = 'rgba(255,255,255,0.1)');
-            el.style.borderColor = 'var(--orange)'; driver = n;
+            el.style.borderColor = 'var(--orange)';
+            const input = document.getElementById('outro-nome');
+            if (n === 'Outros') {
+                input.style.display = 'block';
+                input.focus();
+                driver = '';
+            } else {
+                input.style.display = 'none';
+                driver = n;
+            }
         }
 
         function initOperation() {
+            const outroInput = document.getElementById('outro-nome');
+            if (outroInput.style.display === 'block') {
+                const nome = outroInput.value.trim();
+                if (!nome) return alert("Digite o nome do motorista!");
+                driver = nome;
+            }
             if (!driver) return alert("Selecione o motorista!");
             proximaTela('tela-motorista', 'tela-mapa');
             map = L.map('map', { zoomControl: false }).setView([-23.55, -46.63], 16);
