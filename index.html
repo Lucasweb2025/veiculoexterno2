@@ -102,6 +102,8 @@
 
         const SENHA_MESTRA = "LACUSTOM2026";
         const TRIP_BACKUP_KEY = 'la_trip_backup_v34';
+        const ORS_KEY = "5b3ce3597851110001cf6248f29a41aab5a84830a5a434027bbfeba8";
+        const GPS_ACCURACY_LIMIT = 30;
         const fleet = [
             { id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },
             { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
@@ -228,10 +230,14 @@
                 }, 1000);
 
                 watch = navigator.geolocation.watchPosition(p => {
+                    if (p.coords.accuracy > GPS_ACCURACY_LIMIT) return;
+
                     const pos = [p.coords.latitude, p.coords.longitude];
                     if (path.length > 0) {
-                        const d = L.latLng(path[path.length - 1]).distanceTo(pos);
-                        if (d > 3) dist += d;
+                        const last = path[path.length - 1];
+                        const d = L.latLng(last).distanceTo(pos);
+                        if (d < 2 || d > 500) return;
+                        dist += d;
                     }
                     path.push(pos);
                     marker.setLatLng(pos);
@@ -248,7 +254,7 @@
                     if (err.code === 1) alert("Permissão de GPS negada. Ative a localização e tente novamente.");
                     else if (err.code === 2) alert("GPS indisponível. Verifique o sinal.");
                     else alert("Erro ao obter localização. Tente novamente.");
-                }, { enableHighAccuracy: true });
+                }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
             } else {
                 if (!confirm("Deseja realmente finalizar a corrida?")) return;
                 fecharCorrida();
@@ -261,15 +267,56 @@
             if (wakeLock) { try { wakeLock.release(); } catch(e) {} wakeLock = null; }
         }
 
+        function amostragemPath(pontos, max) {
+            if (pontos.length <= max) return pontos;
+            const result = [pontos[0]];
+            const step = (pontos.length - 1) / (max - 1);
+            for (let i = 1; i < max - 1; i++) result.push(pontos[Math.round(i * step)]);
+            result.push(pontos[pontos.length - 1]);
+            return result;
+        }
+
+        async function snapToRoad(rawPath) {
+            if (rawPath.length < 2) return rawPath;
+
+            const sampled = amostragemPath(rawPath, 50);
+            const coords = sampled.map(p => [p[1], p[0]]);
+
+            try {
+                const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+                    method: 'POST',
+                    headers: { 'Authorization': ORS_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ coordinates: coords, radiuses: coords.map(() => 50) })
+                });
+
+                if (!res.ok) return rawPath;
+
+                const data = await res.json();
+                const geometry = data.features[0].geometry.coordinates;
+                return geometry.map(c => [c[1], c[0]]);
+            } catch (e) {
+                return rawPath;
+            }
+        }
+
         async function fecharCorrida() {
             const btn = document.getElementById('btn-master');
-            btn.disabled = true; btn.innerText = "Salvando...";
+            btn.disabled = true; btn.innerText = "Ajustando rota...";
 
             pararRastreio();
 
-            const kmFinal = parseFloat((dist / 1000).toFixed(2));
+            const snappedPath = await snapToRoad(path);
+
+            btn.innerText = "Salvando...";
+
+            let kmSnapped = 0;
+            for (let i = 1; i < snappedPath.length; i++) {
+                kmSnapped += L.latLng(snappedPath[i - 1]).distanceTo(snappedPath[i]);
+            }
+            const kmFinal = parseFloat((kmSnapped / 1000).toFixed(2));
+
             const carId = fleet[idx].id;
-            const trip = { car: fleet[idx].nome, driver, km: kmFinal, time: document.getElementById('tempo').innerText, date: new Date().toLocaleString('pt-BR'), path };
+            const trip = { car: fleet[idx].nome, driver, km: kmFinal, time: document.getElementById('tempo').innerText, date: new Date().toLocaleString('pt-BR'), path: snappedPath };
 
             try {
                 await db.ref('vehicles/' + carId + '/status').set("DISPONÍVEL");
@@ -277,7 +324,7 @@
                 db.ref('trips').push(trip);
 
                 localStorage.removeItem(TRIP_BACKUP_KEY);
-                alert("Viagem Finalizada!");
+                alert("Viagem Finalizada!\nDistância: " + kmFinal + " km");
                 location.reload();
             } catch (e) {
                 alert("Erro ao sincronizar. O odômetro será atualizado na próxima conexão.");
