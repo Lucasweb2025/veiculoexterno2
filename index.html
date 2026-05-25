@@ -103,7 +103,7 @@
         const SENHA_MESTRA = "LACUSTOM2026";
         const TRIP_BACKUP_KEY = 'la_trip_backup_v34';
         const ORS_KEY = "5b3ce3597851110001cf6248f29a41aab5a84830a5a434027bbfeba8";
-        const GPS_ACCURACY_LIMIT = 30;
+        const GPS_ACCURACY_LIMIT = 60;
         const fleet = [
             { id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },
             { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
@@ -242,19 +242,27 @@
                 }, 1000);
 
                 watch = navigator.geolocation.watchPosition(p => {
-                    if (p.coords.accuracy > GPS_ACCURACY_LIMIT) return;
-
+                    const acc = p.coords.accuracy;
                     const pos = [p.coords.latitude, p.coords.longitude];
-                    if (path.length > 0) {
-                        const last = path[path.length - 1];
-                        const d = L.latLng(last).distanceTo(pos);
-                        if (d < 2 || d > 500) return;
-                        dist += d;
+
+                    if (path.length === 0) {
+                        path.push(pos);
+                        marker.setLatLng(pos);
+                        map.flyTo(pos, 17);
+                        return;
                     }
+
+                    if (acc > GPS_ACCURACY_LIMIT) return;
+
+                    const last = path[path.length - 1];
+                    const d = L.latLng(last).distanceTo(pos);
+                    if (d < 2 || d > 500) return;
+
+                    dist += d;
                     path.push(pos);
                     marker.setLatLng(pos);
                     polyline.addLatLng(pos);
-                    map.flyTo(pos, 17);
+                    map.setView(pos, 17);
                     document.getElementById('km').innerText = (dist / 1000).toFixed(2);
 
                     db.ref('vehicles/' + carId + '/last_pos').set({
@@ -266,7 +274,7 @@
                     if (err.code === 1) alert("Permissão de GPS negada. Ative a localização e tente novamente.");
                     else if (err.code === 2) alert("GPS indisponível. Verifique o sinal.");
                     else alert("Erro ao obter localização. Tente novamente.");
-                }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+                }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
             } else {
                 if (!confirm("Deseja realmente finalizar a corrida?")) return;
                 fecharCorrida();
