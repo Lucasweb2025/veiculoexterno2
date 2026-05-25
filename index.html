@@ -110,8 +110,9 @@
         ];
 
         let idx = 0, driver = "", running = false, dist = 0, path = [], watch, map, marker, polyline, startTime, timer, wakeLock = null;
-        let currentOdoRef = null, checkInterval = null;
+        let currentOdoRef = null, checkInterval = null, pingInterval = null;
         const CHECK_HOURS = 4;
+        const PING_GPS_MS = 60000;
 
         function validarLogin() {
             if(document.getElementById('senha-acesso').value.trim().toUpperCase() === SENHA_MESTRA) {
@@ -275,6 +276,23 @@
                     else if (err.code === 2) alert("GPS indisponível. Verifique o sinal.");
                     else alert("Erro ao obter localização. Tente novamente.");
                 }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
+
+                pingInterval = setInterval(() => {
+                    navigator.geolocation.getCurrentPosition(p => {
+                        const pos = [p.coords.latitude, p.coords.longitude];
+                        if (path.length > 0) {
+                            const last = path[path.length - 1];
+                            const d = L.latLng(last).distanceTo(pos);
+                            if (d < 5 || d > 500) return;
+                            dist += d;
+                        }
+                        path.push(pos);
+                        marker.setLatLng(pos);
+                        polyline.addLatLng(pos);
+                        map.setView(pos, 17);
+                        document.getElementById('km').innerText = (dist / 1000).toFixed(2);
+                    }, null, { enableHighAccuracy: true, timeout: 15000 });
+                }, PING_GPS_MS);
             } else {
                 if (!confirm("Deseja realmente finalizar a corrida?")) return;
                 fecharCorrida();
@@ -289,6 +307,7 @@
         function pararRastreio() {
             if (watch) { navigator.geolocation.clearWatch(watch); watch = null; }
             if (timer) { clearInterval(timer); timer = null; }
+            if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
             if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
             if (wakeLock) { try { wakeLock.release(); } catch(e) {} wakeLock = null; }
             window.removeEventListener('beforeunload', alertaFechar);
