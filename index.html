@@ -110,7 +110,8 @@
         ];
 
         let idx = 0, driver = "", running = false, dist = 0, path = [], watch, map, marker, polyline, startTime, timer, wakeLock = null;
-        let currentOdoRef = null;
+        let currentOdoRef = null, checkInterval = null;
+        const CHECK_HOURS = 4;
 
         function validarLogin() {
             if(document.getElementById('senha-acesso').value.trim().toUpperCase() === SENHA_MESTRA) {
@@ -224,6 +225,17 @@
                 startTime = Date.now();
                 db.ref('vehicles/' + carId + '/status').set("EM MOVIMENTO");
 
+                window.addEventListener('beforeunload', alertaFechar);
+
+                checkInterval = setInterval(() => {
+                    const hrs = Math.floor((Date.now() - startTime) / 3600000);
+                    if (hrs > 0 && hrs % CHECK_HOURS === 0) {
+                        if (confirm(`Corrida ativa há ${hrs} horas!\n${fleet[idx].nome} - ${driver}\n${(dist/1000).toFixed(2)} km\n\nDeseja finalizar agora?`)) {
+                            fecharCorrida();
+                        }
+                    }
+                }, 60000);
+
                 timer = setInterval(() => {
                     document.getElementById('tempo').innerText = formatarTempo(Date.now() - startTime);
                     salvarBackupViagem();
@@ -261,10 +273,17 @@
             }
         }
 
+        function alertaFechar(e) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+
         function pararRastreio() {
             if (watch) { navigator.geolocation.clearWatch(watch); watch = null; }
             if (timer) { clearInterval(timer); timer = null; }
+            if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
             if (wakeLock) { try { wakeLock.release(); } catch(e) {} wakeLock = null; }
+            window.removeEventListener('beforeunload', alertaFechar);
         }
 
         function amostragemPath(pontos, max) {
