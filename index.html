@@ -3,86 +3,569 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#6BB8E8">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
-    <title>L.A. CONTROLE V.34</title>
+    <title>L.A. Controle</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <style>
-        :root { --orange: #f39c12; --dark: #000; --red: #e74c3c; --green: #27ae60; }
-        html, body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: -apple-system, sans-serif; height: 100%; width: 100%; overflow: hidden; }
-        .bg { position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); z-index: 0; }
-        .container { display: flex; flex-direction: column; height: 100dvh; padding: 20px; box-sizing: border-box; align-items: center; z-index: 1; position: relative; }
-        .header { width: 100%; text-align: center; padding: 10px 0; }
-        .logo { height: 60px; filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4)); }
-        .input-login { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--orange); background: rgba(255,255,255,0.05); color: white; margin-bottom: 15px; text-align: center; font-size: 1.1rem; box-sizing: border-box; }
-        .selector { width: 100%; flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden;}
-        .car-visual { max-width: 90%; max-height: 160px; filter: drop-shadow(0 15px 25px rgba(243, 156, 18, 0.5)); border-radius: 15px; }
-        .odo-box { background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; margin-top: 10px; border: 1px solid var(--orange); }
-        .btn { width: 100%; max-width: 300px; padding: 16px; border-radius: 40px; border: 2px solid var(--orange); background: transparent; color: var(--orange); font-weight: bold; text-transform: uppercase; cursor: pointer; }
-        .btn-start { background: var(--green); border: none; color: white; margin-top: 10px; }
-        .btn-stop { background: var(--red); border: none; color: white; margin-top: 10px; }
-        #map { width: 100%; flex-grow: 1; border-radius: 20px; margin: 10px 0; border: 1px solid rgba(255,255,255,0.1); }
-        .stats { width: 100%; display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; }
-        .stat b { display: block; font-size: 1.3rem; color: var(--orange); }
-        .driver-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; width: 100%; }
-        .btn-logout { background: none; border: none; color: #555; font-size: 0.7rem; margin-top: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
-        .polyline-live { stroke: #f39c12; }
+        :root {
+            --blue: #6BB8E8;
+            --blue-dark: #4A9FD4;
+            --blue-deep: #3A8FC8;
+            --white: #ffffff;
+            --text-dark: #2c3e50;
+            --text-muted: #7f8c8d;
+            --route: #2B7CD3;
+            --route-glow: #F5D547;
+            --danger: #e74c3c;
+            --success: #27ae60;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            height: 100%; width: 100%; overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #eef6fc;
+            color: var(--text-dark);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100dvh;
+            max-width: 480px;
+            margin: 0 auto;
+            background: var(--blue);
+            position: relative;
+            z-index: 1;
+        }
+        .screen.active { display: flex; }
+
+        /* —— Barra superior (igual referência) —— */
+        .top-bar {
+            flex-shrink: 0;
+            background: var(--blue);
+            padding: calc(14px + var(--safe-top)) 20px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--white);
+        }
+        .top-bar h1 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+        .top-bar .sub { font-size: 0.75rem; opacity: 0.9; font-weight: 400; margin-top: 2px; }
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.25);
+            border: 2px solid rgba(255,255,255,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .avatar img { width: 36px; height: 36px; object-fit: contain; }
+
+        /* —— Corpo claro (login / veículo / motorista) —— */
+        .body-light {
+            flex: 1;
+            background: #eef6fc;
+            border-radius: 24px 24px 0 0;
+            padding: 24px 20px calc(20px + var(--safe-bottom));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+        }
+        .card {
+            width: 100%;
+            background: var(--white);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(74, 159, 212, 0.15);
+        }
+        .logo-center { height: 56px; margin-bottom: 20px; }
+        .input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #dceefb;
+            border-radius: 14px;
+            font-size: 1rem;
+            text-align: center;
+            margin-bottom: 14px;
+            outline: none;
+            background: #f8fbfe;
+        }
+        .input:focus { border-color: var(--blue); }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+        }
+        .btn-primary { background: var(--blue-dark); color: var(--white); }
+        .btn-success { background: var(--success); color: var(--white); }
+        .btn-danger { background: var(--danger); color: var(--white); }
+        .btn-ghost {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-top: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .steps {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 8px 4px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.5);
+            color: var(--text-muted);
+        }
+        .step.on { background: var(--white); color: var(--blue-dark); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .car-box { text-align: center; width: 100%; }
+        .car-box img {
+            max-width: 100%;
+            max-height: 140px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .car-name { color: var(--blue-dark); font-size: 1.2rem; font-weight: 700; margin: 12px 0 8px; }
+        .odo {
+            display: inline-block;
+            background: #eef6fc;
+            color: var(--blue-deep);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .car-nav {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin: 16px 0;
+        }
+        .nav-arrow {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: var(--white);
+            color: var(--blue-dark);
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(74,159,212,0.25);
+        }
+        .driver-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        .driver-card {
+            padding: 18px 12px;
+            border-radius: 14px;
+            border: 2px solid #dceefb;
+            background: #f8fbfe;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-dark);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+        }
+        .driver-card.selected {
+            border-color: var(--blue-dark);
+            background: var(--blue);
+            color: var(--white);
+        }
+
+        /* —— Tela de viagem estilo 99 / Uber —— */
+        :root {
+            --yellow: #F5C518;
+            --yellow-hover: #E5B800;
+            --route-99: #276EF1;
+            --map-bg: #E8EDF2;
+            --sheet: #ffffff;
+            --black: #1a1a1a;
+        }
+        #tela-mapa {
+            max-width: none;
+            background: var(--sheet);
+            flex-direction: column;
+        }
+        .map-area-99 {
+            flex: 1;
+            position: relative;
+            min-height: 42vh;
+            background: var(--map-bg);
+        }
+        #tela-mapa #map { width: 100%; height: 100%; }
+        .leaflet-container { background: var(--map-bg); font-family: inherit; }
+        .map-back {
+            position: absolute;
+            top: calc(12px + var(--safe-top));
+            left: 14px;
+            z-index: 600;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: var(--white);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            font-size: 1.35rem;
+            color: var(--black);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .map-chip-btn {
+            position: absolute;
+            top: calc(12px + var(--safe-top));
+            right: 14px;
+            z-index: 600;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: none;
+            background: var(--white);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--black);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .bottom-sheet {
+            flex-shrink: 0;
+            background: var(--sheet);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+            padding: 8px 16px calc(12px + var(--safe-bottom));
+        }
+        .sheet-handle {
+            width: 40px;
+            height: 4px;
+            background: #ddd;
+            border-radius: 4px;
+            margin: 4px auto 14px;
+        }
+        .sheet-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+        }
+        .sheet-car-thumb {
+            width: 56px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #f0f0f0;
+            flex-shrink: 0;
+        }
+        .sheet-trip-info { flex: 1; min-width: 0; }
+        .sheet-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--black);
+            margin-bottom: 4px;
+        }
+        .sheet-meta {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.35;
+        }
+        .sheet-meta b { color: var(--black); font-weight: 700; }
+        .sheet-check {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--black);
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .sheet-divider { height: 1px; background: #eee; margin: 0 4px; }
+        .gps-row-sheet { padding: 14px 0; font-size: 0.88rem; color: #444; }
+        .gps-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+            flex-shrink: 0;
+        }
+        .gps-dot.ok { background: var(--success); }
+        .gps-dot.warn { background: var(--yellow); }
+        .gps-dot.bad { background: var(--danger); }
+        .gps-dot.wait { background: #bbb; }
+        .sheet-cta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px 0 8px;
+        }
+        .sheet-km-block { flex-shrink: 0; }
+        .sheet-km-big {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--black);
+            line-height: 1;
+        }
+        .sheet-km-big small {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 4px;
+        }
+        .btn-yellow {
+            flex: 1;
+            min-width: 0;
+            padding: 18px 20px;
+            border: none;
+            border-radius: 12px;
+            background: var(--yellow);
+            color: var(--black);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .btn-yellow:active { background: var(--yellow-hover); }
+        .btn-yellow.stop {
+            background: var(--black);
+            color: var(--white);
+        }
+        .car-pin-wrap { background: none; border: none; }
+        .car-pin {
+            width: 22px;
+            height: 22px;
+            margin: -11px 0 0 -11px;
+            background: var(--yellow);
+            border: 3px solid var(--black);
+            border-radius: 50%;
+            box-shadow: 0 0 0 6px rgba(245, 197, 24, 0.45);
+        }
+        .car-pin::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            margin: -3px 0 0 -3px;
+            background: var(--black);
+            border-radius: 50%;
+        }
+        .car-pin-wrap .car-pin { position: relative; }
+
+        /* Marcadores das unidades L.A. (estilo balão 99) */
+        .unidade-marker-wrap { background: none; border: none; }
+        .unidade-marker {
+            width: 14px;
+            height: 14px;
+            margin: -7px 0 0 -7px;
+            background: var(--black);
+            border: 3px solid var(--white);
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+        .unidade-marker.matriz {
+            width: 18px;
+            height: 18px;
+            margin: -9px 0 0 -9px;
+            background: var(--yellow);
+            border-color: var(--black);
+        }
+        .unidade-marker.parada-rota {
+            background: var(--yellow);
+            border-color: #276EF1;
+            width: 16px;
+            height: 16px;
+            margin: -8px 0 0 -8px;
+        }
+        .leaflet-tooltip.unidade-tooltip {
+            background: var(--white);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+            color: var(--black);
+            font-size: 0.78rem;
+            line-height: 1.35;
+            max-width: 220px;
+            white-space: normal;
+        }
+        .leaflet-tooltip.unidade-tooltip::before { border-top-color: var(--white); }
+        .unidade-tip b { display: block; font-size: 0.82rem; margin-bottom: 3px; }
+        .unidade-tip span { color: #555; font-size: 0.72rem; }
+        .sheet-unidades {
+            padding: 10px 0 4px;
+            font-size: 0.75rem;
+            color: #666;
+            line-height: 1.5;
+        }
+        .sheet-unidades strong { color: var(--black); font-size: 0.78rem; }
     </style>
 </head>
 <body onload="verificarSessao()">
-    <div class="bg"></div>
 
-    <div id="tela-login" class="container">
-        <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
-        <div style="text-align: center; width: 100%; max-width: 300px; margin-top: 50px;">
-            <h2 style="color: var(--orange); font-size: 1.1rem; margin-bottom: 20px;">L.A. PORTFÓLIO CLOUD</h2>
-            <input type="password" id="senha-acesso" class="input-login" placeholder="Senha Master" onkeypress="if(event.key==='Enter') validarLogin()">
-            <button class="btn" onclick="validarLogin()">Acessar Sistema</button>
+    <!-- LOGIN -->
+    <div id="tela-login" class="screen active">
+        <div class="top-bar">
+            <div>
+                <h1>L.A. Controle</h1>
+                <div class="sub">Portfólio Cloud</div>
+            </div>
+            <div class="avatar"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" alt="L.A."></div>
+        </div>
+        <div class="body-light">
+            <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo-center" alt="L.A. Custom">
+            <div class="card">
+                <p style="text-align:center;color:var(--text-muted);margin-bottom:16px;font-size:0.9rem;">Acesso ao sistema de frota</p>
+                <input type="password" id="senha-acesso" class="input" placeholder="Senha de acesso" onkeypress="if(event.key==='Enter') validarLogin()">
+                <button class="btn btn-primary" onclick="validarLogin()">Entrar</button>
+            </div>
         </div>
     </div>
 
-    <div id="app-content" style="display: none;">
-        <div id="tela-veiculo" class="container">
-            <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
-            <div class="selector">
-                <div id="car-render"></div>
-                <h2 id="car-name" style="color: var(--orange); font-size: 1.2rem; margin-top: 10px;">---</h2>
-                <div id="car-odo" class="odo-box">Odômetro Cloud: 0.00 km</div>
+    <div id="app-content" style="display:none; height:100%;">
+
+        <!-- VEÍCULO -->
+        <div id="tela-veiculo" class="screen">
+            <div class="top-bar">
+                <div>
+                    <h1>Seu veículo</h1>
+                    <div class="sub">Passo 1 de 3</div>
+                </div>
+                <div class="avatar"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" alt="L.A."></div>
             </div>
-            <div style="display: flex; gap: 40px; margin-bottom: 20px;">
-                <button onclick="mudar(-1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❮</button>
-                <button onclick="mudar(1)" style="background:none; border:none; color:white; font-size: 2.5rem;">❯</button>
+            <div class="body-light">
+                <div class="steps">
+                    <div class="step on">Veículo</div>
+                    <div class="step">Motorista</div>
+                    <div class="step">Viagem</div>
+                </div>
+                <div class="card car-box">
+                    <div id="car-render"></div>
+                    <h2 id="car-name" class="car-name">---</h2>
+                    <div id="car-odo" class="odo">Odômetro: 0,00 km</div>
+                </div>
+                <div class="car-nav">
+                    <button type="button" class="nav-arrow" onclick="mudar(-1)">❮</button>
+                    <button type="button" class="nav-arrow" onclick="mudar(1)">❯</button>
+                </div>
+                <button class="btn btn-primary" style="margin-top:8px;" onclick="proximaTela('tela-veiculo', 'tela-motorista')">Próximo</button>
+                <button type="button" class="btn-ghost" onclick="logout()">Sair</button>
             </div>
-            <button class="btn" onclick="proximaTela('tela-veiculo', 'tela-motorista')">Selecionar Motorista</button>
-            <button class="btn-logout" onclick="logout()">Sair do Sistema</button>
         </div>
 
-        <div id="tela-motorista" class="container" style="display:none;">
-            <div class="header"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo"></div>
-            <h3 style="margin-bottom:20px;">Identificação</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
-                <div class="driver-card" onclick="setDriver(this, 'Marco')">Marco</div>
-                <div class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
-                <div class="driver-card" onclick="setDriver(this, 'Outros')">Outros</div>
+        <!-- MOTORISTA -->
+        <div id="tela-motorista" class="screen">
+            <div class="top-bar">
+                <div>
+                    <h1>Seu perfil</h1>
+                    <div class="sub" id="motorista-veiculo-hint">Passo 2 de 3</div>
+                </div>
+                <div class="avatar"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" alt="L.A."></div>
             </div>
-            <input type="text" id="outro-nome" placeholder="Digite o nome completo" style="display:none; background:none; border:1px solid var(--orange); color:white; padding:12px; border-radius:10px; width:100%; margin-top:10px; text-align:center; box-sizing:border-box; font-size:1rem;">
-            <button class="btn btn-start" style="margin-top: auto;" onclick="initOperation()">Confirmar Saída</button>
-            <button onclick="location.reload()" style="background:none; border:none; color:#555; margin: 10px 0;">Sair</button>
+            <div class="body-light">
+                <div class="steps">
+                    <div class="step">Veículo</div>
+                    <div class="step on">Motorista</div>
+                    <div class="step">Viagem</div>
+                </div>
+                <div class="driver-grid" style="width:100%;">
+                    <div class="driver-card" onclick="setDriver(this, 'Marco')">Marco</div>
+                    <div class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
+                </div>
+                <button class="btn btn-success" style="margin-top:auto;width:100%;" onclick="initOperation()">Ir para o mapa</button>
+                <button type="button" class="btn-ghost" onclick="location.reload()">Voltar</button>
+            </div>
         </div>
 
-        <div id="tela-mapa" class="container" style="display:none;">
-            <div class="stats">
-                <div class="stat"><small>ESTA VIAGEM</small><b id="km">0.00</b><small>KM</small></div>
-                <div class="stat"><small>TEMPO</small><b id="tempo">00:00</b></div>
+        <!-- VIAGEM (estilo 99 / Uber) -->
+        <div id="tela-mapa" class="screen">
+            <div class="map-area-99">
+                <button type="button" class="map-back" onclick="voltarDoMapa()" aria-label="Voltar">←</button>
+                <button type="button" id="btn-ver-rota" class="map-chip-btn" style="display:none" onclick="alternarModoMapa()">Trajeto</button>
+                <div id="map"></div>
             </div>
-            <div id="map"></div>
-            <button id="btn-master" class="btn btn-start" onclick="toggleTracking()">Iniciar Rastreio</button>
+
+            <div class="bottom-sheet">
+                <div class="sheet-handle"></div>
+
+                <div class="sheet-row">
+                    <img id="sheet-car-img" class="sheet-car-thumb" src="" alt="">
+                    <div class="sheet-trip-info">
+                        <div class="sheet-title" id="trip-activity-label">---</div>
+                        <div class="sheet-meta">
+                            <span id="trip-driver-label">---</span>
+                            · <b id="km">0,00</b> km
+                            · <b id="tempo">00:00</b>
+                        </div>
+                    </div>
+                    <div class="sheet-check" aria-hidden="true">✓</div>
+                </div>
+
+                <div class="sheet-divider"></div>
+
+                <div class="sheet-row gps-row-sheet">
+                    <span id="gps-dot" class="gps-dot wait"></span>
+                    <span id="gps-status">Aguardando sinal GPS...</span>
+                </div>
+
+                <div class="sheet-divider"></div>
+
+                <div id="unidades-resumo" class="sheet-unidades"></div>
+
+                <div class="sheet-cta">
+                    <div class="sheet-km-block">
+                        <div class="sheet-km-big">
+                            <span id="km-big">0,00</span>
+                            <small>km nesta viagem</small>
+                        </div>
+                    </div>
+                    <button type="button" id="btn-master" class="btn-yellow" onclick="toggleTracking()">Iniciar rastreio</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -90,6 +573,7 @@
     <script>
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
+        const ROUTE_COLOR = '#276EF1';
         const firebaseConfig = {
             apiKey: "AIzaSyB4wDK8VddBeOOrfndLd7LemSGDPupKjF0",
             authDomain: "la-controle.firebaseapp.com",
@@ -111,25 +595,82 @@
             { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
         ];
 
+        /** Unidades L.A. no mapa — edite lat/lng ou cadastre em Firebase em /unidades */
+        const UNIDADES_LA = [
+            {
+                id: 'moema',
+                nome: 'L.A. Custom — Moema',
+                endereco: 'Av. dos Imarés, 398 — Moema, SP',
+                lat: -23.612783,
+                lng: -46.665663,
+                matriz: true
+            },
+            {
+                id: 'vila-olimpia',
+                nome: 'Parada 1 — Vila Olímpia',
+                endereco: 'Av. Dr. Cardoso de Melo, 1507 — Vila Olímpia, SP',
+                lat: -23.5970601,
+                lng: -46.6878637,
+                matriz: false,
+                paradaRota: true,
+                ordemRota: 1
+            },
+            {
+                id: 'clodomiro',
+                nome: 'Parada 2 — Vila Nova Conceição',
+                endereco: 'R. Clodomiro Amazonas, 1000 — Vila Nova Conceição, SP',
+                lat: -23.5930138,
+                lng: -46.6773446,
+                matriz: false,
+                paradaRota: true,
+                ordemRota: 2
+            },
+            {
+                id: 'nacoes-unidas',
+                nome: 'Parada 3 — Nações Unidas',
+                endereco: 'Av. das Nações Unidas, 16.427 — Várzea de Baixo, SP',
+                lat: -23.6352384,
+                lng: -46.7182594,
+                matriz: false,
+                paradaRota: true,
+                ordemRota: 3
+            }
+        ];
+
+        /** Ordem da rota fixa do motorista (ids em UNIDADES_LA) */
+        const ORDEM_ROTA_MOTORISTA = ['vila-olimpia', 'clodomiro', 'nacoes-unidas'];
+
         let idx = 0, driver = "", running = false, dist = 0, path = [], watch, map, marker, polyline, startTime, timer, wakeLock = null;
-        let currentOdoRef = null, checkInterval = null, pingInterval = null;
+        let currentOdoRef = null, checkInterval = null;
+        let mapFollowCar = true;
+        let unidadesLayer = null;
+        let linhaSaidaBase = null;
+        let linhaRotaFixa = null;
+        let unidadesLista = UNIDADES_LA.slice();
         const CHECK_HOURS = 4;
-        const PING_GPS_MS = 60000;
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const el = document.getElementById(id);
+            if (el) el.classList.add('active');
+        }
 
         function validarLogin() {
-            if(document.getElementById('senha-acesso').value.trim().toUpperCase() === SENHA_MESTRA) {
+            if (document.getElementById('senha-acesso').value.trim().toUpperCase() === SENHA_MESTRA) {
                 localStorage.setItem('sessao_la_cloud', 'ativa');
-                document.getElementById('tela-login').style.display = 'none';
+                document.getElementById('tela-login').classList.remove('active');
                 document.getElementById('app-content').style.display = 'block';
+                showScreen('tela-veiculo');
                 mudar(0);
                 verificarViagemPendente();
-            } else { alert("Senha Incorreta!"); }
+            } else { alert("Senha incorreta!"); }
         }
 
         function verificarSessao() {
-            if(localStorage.getItem('sessao_la_cloud') === 'ativa') {
-                document.getElementById('tela-login').style.display = 'none';
+            if (localStorage.getItem('sessao_la_cloud') === 'ativa') {
+                document.getElementById('tela-login').classList.remove('active');
                 document.getElementById('app-content').style.display = 'block';
+                showScreen('tela-veiculo');
                 mudar(0);
                 verificarViagemPendente();
             }
@@ -145,13 +686,12 @@
         function verificarViagemPendente() {
             const backup = localStorage.getItem(TRIP_BACKUP_KEY);
             if (!backup) return;
-
-            const data = JSON.parse(backup);
-            if (confirm(`Viagem anterior não finalizada!\n${data.car} - ${data.driver}\n${data.km.toFixed(2)} km percorridos\n\nDeseja salvar esta viagem?`)) {
-                salvarViagemRecuperada(data);
-            } else {
-                localStorage.removeItem(TRIP_BACKUP_KEY);
-            }
+            try {
+                const data = JSON.parse(backup);
+                if (confirm(`Viagem anterior não finalizada!\n${data.car} - ${data.driver}\n${data.km.toFixed(2)} km\n\nSalvar agora?`)) {
+                    salvarViagemRecuperada(data);
+                } else localStorage.removeItem(TRIP_BACKUP_KEY);
+            } catch (e) { localStorage.removeItem(TRIP_BACKUP_KEY); }
         }
 
         async function salvarViagemRecuperada(data) {
@@ -161,22 +701,19 @@
                 await db.ref('vehicles/' + data.carId + '/odometer').transaction(c => (c || 0) + data.km);
                 db.ref('trips').push(trip);
                 localStorage.removeItem(TRIP_BACKUP_KEY);
-                alert("Viagem recuperada e salva com sucesso!");
-            } catch (e) {
-                alert("Erro ao salvar viagem recuperada. Tente novamente.");
-            }
+                alert("Viagem recuperada e salva!");
+            } catch (e) { alert("Erro ao salvar. Tente novamente."); }
         }
 
         function salvarBackupViagem() {
             if (!running) return;
-            const backup = {
+            localStorage.setItem(TRIP_BACKUP_KEY, JSON.stringify({
                 carId: fleet[idx].id, car: fleet[idx].nome, driver,
                 km: parseFloat((dist / 1000).toFixed(2)),
                 time: document.getElementById('tempo').innerText,
                 date: new Date().toLocaleString('pt-BR'),
                 path, startTime
-            };
-            localStorage.setItem(TRIP_BACKUP_KEY, JSON.stringify(backup));
+            }));
         }
 
         function formatarTempo(ms) {
@@ -190,47 +727,217 @@
 
         function mudar(n) {
             if (currentOdoRef) currentOdoRef.off('value');
-
             idx = (idx + n + fleet.length) % fleet.length;
-            document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" class="car-visual">`;
+            document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" alt="">`;
             document.getElementById('car-name').innerText = fleet[idx].nome;
-
             currentOdoRef = db.ref('vehicles/' + fleet[idx].id + '/odometer');
             currentOdoRef.on('value', s => {
-                document.getElementById('car-odo').innerText = `Odômetro Cloud: ${(s.val() || 0).toFixed(2)} km`;
+                document.getElementById('car-odo').innerText = `Odômetro: ${(s.val() || 0).toFixed(2)} km`;
+            });
+            const hint = document.getElementById('motorista-veiculo-hint');
+            if (hint) hint.textContent = fleet[idx].nome;
+        }
+
+        function proximaTela(a, p) {
+            document.getElementById(a).classList.remove('active');
+            showScreen(p);
+        }
+
+        function atualizarBarraViagem() {
+            const label = document.getElementById('trip-activity-label');
+            const drv = document.getElementById('trip-driver-label');
+            const img = document.getElementById('sheet-car-img');
+            if (label) label.textContent = fleet[idx].nome;
+            if (drv) drv.textContent = driver;
+            if (img) img.src = fleet[idx].foto;
+        }
+
+        function atualizarKmDisplay() {
+            const km = (dist / 1000).toFixed(2).replace('.', ',');
+            const el = document.getElementById('km');
+            const big = document.getElementById('km-big');
+            if (el) el.textContent = km;
+            if (big) big.textContent = km;
+        }
+
+        function voltarDoMapa() {
+            if (running) return alert('Finalize a corrida antes de voltar.');
+            showScreen('tela-motorista');
+        }
+
+        function atualizarGpsUi(acc, modo) {
+            const el = document.getElementById('gps-status');
+            const dot = document.getElementById('gps-dot');
+            if (dot) dot.className = 'gps-dot ' + modo;
+            if (!el) return;
+            const m = Math.round(acc);
+            if (modo === 'ok') el.textContent = 'GPS excelente (~' + m + ' m)';
+            else if (modo === 'warn') el.textContent = 'GPS bom (~' + m + ' m)';
+            else if (modo === 'bad') el.textContent = 'GPS fraco — aguarde';
+            else el.textContent = 'Aguardando GPS...';
+        }
+
+        function seguirCarro(pos) {
+            if (!map || !mapFollowCar || !running) return;
+            const z = map.getZoom() < 15 ? 17 : map.getZoom();
+            map.setView(pos, z, { animate: true, duration: 0.35 });
+        }
+
+        function alternarModoMapa() {
+            mapFollowCar = !mapFollowCar;
+            const btn = document.getElementById('btn-ver-rota');
+            if (!btn) return;
+            btn.textContent = mapFollowCar ? 'Trajeto' : 'Seguir';
+            if (mapFollowCar && path.length) seguirCarro(path[path.length - 1]);
+            else ajustarZoomMapaComUnidades();
+        }
+
+        function mesclarParadasRotaFixa(lista) {
+            const ids = new Set(lista.map(u => u.id));
+            UNIDADES_LA.filter(u => u.paradaRota).forEach(u => {
+                if (!ids.has(u.id)) lista.push({ ...u });
+            });
+            return lista;
+        }
+
+        function carregarUnidadesFirebase() {
+            return new Promise(resolve => {
+                db.ref('unidades').once('value', snap => {
+                    const val = snap.val();
+                    if (!val) { resolve(UNIDADES_LA.slice()); return; }
+                    const lista = Object.entries(val).map(([id, u]) => ({
+                        id,
+                        nome: u.nome || id,
+                        endereco: u.endereco || '',
+                        lat: parseFloat(u.lat),
+                        lng: parseFloat(u.lng),
+                        matriz: !!u.matriz,
+                        paradaRota: !!u.paradaRota,
+                        ordemRota: u.ordemRota != null ? parseInt(u.ordemRota, 10) : undefined
+                    })).filter(u => !isNaN(u.lat) && !isNaN(u.lng));
+                    resolve(mesclarParadasRotaFixa(lista.length ? lista : UNIDADES_LA.slice()));
+                }, () => resolve(UNIDADES_LA.slice()));
             });
         }
 
-        function proximaTela(a, p) { document.getElementById(a).style.display = 'none'; document.getElementById(p).style.display = 'flex'; }
+        function atualizarResumoUnidades() {
+            const el = document.getElementById('unidades-resumo');
+            if (!el) return;
+            const base = unidadesLista.filter(u => !u.paradaRota);
+            const paradas = unidadesLista.filter(u => u.paradaRota)
+                .sort((a, b) => (a.ordemRota || 99) - (b.ordemRota || 99));
+            let html = '<strong>Base</strong><br>' + base.map(u =>
+                (u.matriz ? '● ' : '○ ') + u.nome
+            ).join('<br>');
+            if (paradas.length) {
+                html += '<br><br><strong>Rota do motorista</strong><br>' + paradas.map(u =>
+                    (u.ordemRota || '') + '. ' + u.nome.replace(/^Parada \d+ — /, '')
+                ).join('<br>');
+            }
+            el.innerHTML = html;
+        }
 
-        function setDriver(el, n) {
-            document.querySelectorAll('.driver-card').forEach(c => c.style.borderColor = 'rgba(255,255,255,0.1)');
-            el.style.borderColor = 'var(--orange)';
-            const input = document.getElementById('outro-nome');
-            if (n === 'Outros') {
-                input.style.display = 'block';
-                input.focus();
-                driver = '';
-            } else {
-                input.style.display = 'none';
-                driver = n;
+        function renderizarUnidadesNoMapa() {
+            if (!map) return;
+            if (unidadesLayer) map.removeLayer(unidadesLayer);
+            unidadesLayer = L.layerGroup();
+            unidadesLista.forEach(u => {
+                const isParada = !!u.paradaRota;
+                const sz = u.matriz ? 18 : (isParada ? 16 : 14);
+                const icon = L.divIcon({
+                    className: 'unidade-marker-wrap',
+                    html: '<div class="unidade-marker' + (u.matriz ? ' matriz' : '') + (isParada ? ' parada-rota' : '') + '"></div>',
+                    iconSize: [sz, sz],
+                    iconAnchor: [sz / 2, sz / 2]
+                });
+                L.marker([u.lat, u.lng], { icon, zIndexOffset: 400 })
+                    .bindTooltip(
+                        '<div class="unidade-tip"><b>' + u.nome + '</b><span>' + u.endereco + '</span></div>',
+                        { permanent: true, direction: 'top', offset: [0, -12], className: 'unidade-tooltip' }
+                    )
+                    .addTo(unidadesLayer);
+            });
+            unidadesLayer.addTo(map);
+            renderizarRotaFixa();
+            atualizarResumoUnidades();
+        }
+
+        function renderizarRotaFixa() {
+            if (!map) return;
+            if (linhaRotaFixa) { map.removeLayer(linhaRotaFixa); linhaRotaFixa = null; }
+            const pts = ORDEM_ROTA_MOTORISTA.map(id => {
+                const u = unidadesLista.find(x => x.id === id);
+                return u ? [u.lat, u.lng] : null;
+            }).filter(Boolean);
+            if (pts.length >= 2) {
+                linhaRotaFixa = L.polyline(pts, {
+                    color: ROUTE_COLOR,
+                    weight: 4,
+                    dashArray: '10, 14',
+                    opacity: 0.55,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                }).addTo(map);
             }
         }
 
-        function initOperation() {
-            const outroInput = document.getElementById('outro-nome');
-            if (outroInput.style.display === 'block') {
-                const nome = outroInput.value.trim();
-                if (!nome) return alert("Digite o nome do motorista!");
-                driver = nome;
+        function atualizarLinhaSaidaDaBase() {
+            if (!map) return;
+            if (linhaSaidaBase) { map.removeLayer(linhaSaidaBase); linhaSaidaBase = null; }
+            const base = unidadesLista.find(u => u.matriz) || unidadesLista[0];
+            if (!base || path.length === 0) return;
+            const d = L.latLng(path[0]).distanceTo([base.lat, base.lng]);
+            if (d > 60) {
+                linhaSaidaBase = L.polyline([[base.lat, base.lng], path[0]], {
+                    color: ROUTE_COLOR,
+                    weight: 5,
+                    dashArray: '12, 10',
+                    opacity: 0.65,
+                    lineCap: 'round'
+                }).addTo(map);
             }
+        }
+
+        function ajustarZoomMapaComUnidades() {
+            if (!map) return;
+            const pts = [];
+            unidadesLista.forEach(u => pts.push([u.lat, u.lng]));
+            if (path.length) path.forEach(p => pts.push(p));
+            if (pts.length === 1) {
+                map.setView(pts[0], 16);
+                return;
+            }
+            if (pts.length > 1) {
+                map.fitBounds(L.latLngBounds(pts), { padding: [70, 70], maxZoom: 16, animate: true });
+            }
+        }
+
+        function setDriver(el, n) {
+            document.querySelectorAll('.driver-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            driver = n;
+        }
+
+        async function initOperation() {
             if (!driver) return alert("Selecione o motorista!");
+            atualizarBarraViagem();
             proximaTela('tela-motorista', 'tela-mapa');
-            map = L.map('map', { zoomControl: false }).setView([-23.55, -46.63], 16);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-            marker = L.circleMarker([0,0], {radius: 9, color: '#f39c12', fillOpacity: 1, weight: 3}).addTo(map);
-            polyline = L.polyline([], {color: '#f39c12', weight: 3, opacity: 0.7}).addTo(map);
-            setTimeout(() => map.invalidateSize(), 400);
+            mapFollowCar = true;
+            unidadesLista = await carregarUnidadesFirebase();
+            const base = unidadesLista.find(u => u.matriz) || unidadesLista[0];
+            const centro = base ? [base.lat, base.lng] : [-23.612783, -46.665663];
+            const pin = L.divIcon({ className: 'car-pin-wrap', html: '<div class="car-pin"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+            if (map) { map.remove(); map = null; }
+            linhaSaidaBase = null;
+            linhaRotaFixa = null;
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView(centro, 15);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map);
+            marker = L.marker(centro, { icon: pin, zIndexOffset: 1000 }).addTo(map);
+            polyline = L.polyline([], { color: ROUTE_COLOR, weight: 7, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+            renderizarUnidadesNoMapa();
+            atualizarKmDisplay();
+            setTimeout(() => { map.invalidateSize(); ajustarZoomMapaComUnidades(); }, 300);
+            setTimeout(() => map.invalidateSize(), 800);
         }
 
         async function toggleTracking() {
@@ -239,18 +946,21 @@
 
             if (!running) {
                 try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
-                running = true; btn.innerText = "Finalizar Corrida"; btn.className = "btn btn-stop";
+                running = true;
+                btn.innerText = "Finalizar";
+                btn.className = "btn-yellow stop";
+                mapFollowCar = true;
                 startTime = Date.now();
+                atualizarGpsUi(99, 'wait');
+                const btnRota = document.getElementById('btn-ver-rota');
+                if (btnRota) { btnRota.style.display = 'block'; btnRota.textContent = 'Trajeto'; }
                 db.ref('vehicles/' + carId + '/status').set("EM MOVIMENTO");
-
                 window.addEventListener('beforeunload', alertaFechar);
 
                 checkInterval = setInterval(() => {
                     const hrs = Math.floor((Date.now() - startTime) / 3600000);
                     if (hrs > 0 && hrs % CHECK_HOURS === 0) {
-                        if (confirm(`Corrida ativa há ${hrs} horas!\n${fleet[idx].nome} - ${driver}\n${(dist/1000).toFixed(2)} km\n\nDeseja finalizar agora?`)) {
-                            fecharCorrida();
-                        }
+                        if (confirm(`Corrida ativa há ${hrs}h!\nFinalizar agora?`)) fecharCorrida();
                     }
                 }, 60000);
 
@@ -262,69 +972,48 @@
                 watch = navigator.geolocation.watchPosition(p => {
                     const acc = p.coords.accuracy;
                     const pos = [p.coords.latitude, p.coords.longitude];
+                    if (acc > GPS_ACCURACY_LIMIT) { atualizarGpsUi(acc, 'bad'); return; }
+                    atualizarGpsUi(acc, acc <= 25 ? 'ok' : 'warn');
 
                     if (path.length === 0) {
                         path.push(pos);
+                        polyline.addLatLng(pos);
                         marker.setLatLng(pos);
-                        map.flyTo(pos, 17);
+                        atualizarLinhaSaidaDaBase();
+                        map.setView(pos, 17);
                         return;
                     }
-
-                    if (acc > GPS_ACCURACY_LIMIT) return;
-
                     const last = path[path.length - 1];
                     const d = L.latLng(last).distanceTo(pos);
-                    if (d < 2 || d > 500) return;
-
+                    if (d < 3 || d > 120) return;
                     dist += d;
                     path.push(pos);
                     marker.setLatLng(pos);
                     polyline.addLatLng(pos);
-                    map.setView(pos, 17);
-                    document.getElementById('km').innerText = (dist / 1000).toFixed(2);
-
+                    if (path.length === 2) atualizarLinhaSaidaDaBase();
+                    seguirCarro(pos);
+                    atualizarKmDisplay();
                     db.ref('vehicles/' + carId + '/last_pos').set({
-                        lat: p.coords.latitude, lng: p.coords.longitude,
-                        driver, km_atual: (dist / 1000).toFixed(2),
+                        lat: pos[0], lng: pos[1], driver,
+                        km_atual: (dist / 1000).toFixed(2),
                         last_update: new Date().toLocaleString('pt-BR')
                     });
                 }, err => {
-                    if (err.code === 1) alert("Permissão de GPS negada. Ative a localização e tente novamente.");
-                    else if (err.code === 2) alert("GPS indisponível. Verifique o sinal.");
-                    else alert("Erro ao obter localização. Tente novamente.");
-                }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 });
-
-                pingInterval = setInterval(() => {
-                    navigator.geolocation.getCurrentPosition(p => {
-                        const pos = [p.coords.latitude, p.coords.longitude];
-                        if (path.length > 0) {
-                            const last = path[path.length - 1];
-                            const d = L.latLng(last).distanceTo(pos);
-                            if (d < 5 || d > 500) return;
-                            dist += d;
-                        }
-                        path.push(pos);
-                        marker.setLatLng(pos);
-                        polyline.addLatLng(pos);
-                        map.setView(pos, 17);
-                        document.getElementById('km').innerText = (dist / 1000).toFixed(2);
-                    }, null, { enableHighAccuracy: true, timeout: 15000 });
-                }, PING_GPS_MS);
+                    atualizarGpsUi(999, 'bad');
+                    if (err.code === 1) alert("Ative a localização nas configurações.");
+                    else if (err.code === 2) alert("GPS indisponível.");
+                }, { enableHighAccuracy: true, maximumAge: 0, timeout: 25000 });
             } else {
-                if (!confirm("Deseja realmente finalizar a corrida?")) return;
+                if (!confirm("Finalizar esta corrida?")) return;
                 fecharCorrida();
             }
         }
 
-        function alertaFechar(e) {
-            e.preventDefault();
-            e.returnValue = '';
-        }
+        function alertaFechar(e) { e.preventDefault(); e.returnValue = ''; }
 
         function pararRastreio() {
             if (watch) { navigator.geolocation.clearWatch(watch); watch = null; }
             if (timer) { clearInterval(timer); timer = null; }
-            if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
             if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
             if (wakeLock) { try { wakeLock.release(); } catch(e) {} wakeLock = null; }
             window.removeEventListener('beforeunload', alertaFechar);
@@ -341,57 +1030,46 @@
 
         async function snapToRoad(rawPath) {
             if (rawPath.length < 2) return rawPath;
-
             const sampled = amostragemPath(rawPath, 50);
             const coords = sampled.map(p => [p[1], p[0]]);
-
             try {
                 const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
                     method: 'POST',
                     headers: { 'Authorization': ORS_KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ coordinates: coords, radiuses: coords.map(() => 50) })
                 });
-
                 if (!res.ok) return rawPath;
-
                 const data = await res.json();
-                const geometry = data.features[0].geometry.coordinates;
-                return geometry.map(c => [c[1], c[0]]);
-            } catch (e) {
-                return rawPath;
-            }
+                return data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            } catch (e) { return rawPath; }
         }
 
         async function fecharCorrida() {
             const btn = document.getElementById('btn-master');
-            btn.disabled = true; btn.innerText = "Ajustando rota...";
-
+            btn.disabled = true;
+            btn.innerText = "Ajustando rota...";
             pararRastreio();
-
+            running = false;
             const snappedPath = await snapToRoad(path);
-
             btn.innerText = "Salvando...";
-
             let kmSnapped = 0;
             for (let i = 1; i < snappedPath.length; i++) {
                 kmSnapped += L.latLng(snappedPath[i - 1]).distanceTo(snappedPath[i]);
             }
             const kmFinal = parseFloat((kmSnapped / 1000).toFixed(2));
-
             const carId = fleet[idx].id;
             const trip = { car: fleet[idx].nome, driver, km: kmFinal, time: document.getElementById('tempo').innerText, date: new Date().toLocaleString('pt-BR'), path: snappedPath };
-
             try {
                 await db.ref('vehicles/' + carId + '/status').set("DISPONÍVEL");
                 await db.ref('vehicles/' + carId + '/odometer').transaction(c => (c || 0) + kmFinal);
                 db.ref('trips').push(trip);
-
                 localStorage.removeItem(TRIP_BACKUP_KEY);
-                alert("Viagem Finalizada!\nDistância: " + kmFinal + " km");
+                alert("Viagem finalizada!\n" + kmFinal + " km");
                 location.reload();
             } catch (e) {
-                alert("Erro ao sincronizar. O odômetro será atualizado na próxima conexão.");
-                location.reload();
+                alert("Erro ao sincronizar. Tente novamente.");
+                btn.disabled = false;
+                btn.innerText = "Tentar salvar";
             }
         }
     </script>

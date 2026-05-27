@@ -4,8 +4,8 @@
   "description": "Monitoramento de Veículos L.A.",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#f39c12",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "https://i.ibb.co/27cxGcb1/lacustomlogotipo.png",
