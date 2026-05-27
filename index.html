@@ -291,12 +291,25 @@
             color: var(--black);
             box-shadow: inset 0 0 0 2px var(--black);
         }
-        .endereco-rail-btn.outro {
+        .endereco-rail-btn.sede {
+            background: var(--yellow);
+            font-weight: 800;
+            min-height: 48px;
+        }
+        .endereco-rail-btn.sede.on {
+            box-shadow: inset 0 0 0 2px var(--black);
+        }
+        .endereco-rail-btn.outros {
             font-weight: 600;
             color: #666;
             min-height: 44px;
+            font-size: 0.58rem;
         }
-        .endereco-rail-btn.outro.on { color: var(--black); }
+        .endereco-rail-btn.outros.on {
+            background: var(--yellow);
+            color: var(--black);
+            font-weight: 800;
+        }
         .endereco-rail-btn:disabled { opacity: 0.45; pointer-events: none; }
         .map-back {
             position: absolute;
@@ -860,10 +873,10 @@
             const drv = document.getElementById('trip-driver-label');
             const img = document.getElementById('sheet-car-img');
             if (label) {
-                if (destinoSelecionado && destinoSelecionado.id !== 'outro') {
+                if (destinoSelecionado && destinoSelecionado.id === 'outros') {
+                    label.textContent = '→ Rastreio livre';
+                } else if (destinoSelecionado) {
                     label.textContent = '→ ' + (destinoSelecionado.nomeCurto || destinoSelecionado.nome);
-                } else if (destinoSelecionado && destinoSelecionado.id === 'outro') {
-                    label.textContent = '→ Outro lugar';
                 } else {
                     label.textContent = fleet[idx].nome;
                 }
@@ -884,7 +897,8 @@
                 const end = (d.endereco || nome).replace(/"/g, '&quot;');
                 return '<button type="button" class="endereco-rail-btn' + on + '"' + dis + ' data-id="' + d.id + '" onclick="selecionarDestino(\'' + d.id + '\')" title="' + end + '">' + nome + '</button>';
             }).join('') +
-                '<button type="button" class="endereco-rail-btn outro' + (selId === 'outro' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'outro\')" title="Outro endereço">Outro</button>';
+                '<button type="button" class="endereco-rail-btn sede' + (selId === 'sede' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'sede\')" title="Voltar para L.A. Moema">Sede</button>' +
+                '<button type="button" class="endereco-rail-btn outros' + (selId === 'outros' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'outros\')" title="Rastreio sem destino fixo">Outros</button>';
             rail.innerHTML = '<span class="enderecos-rail-label">Destinos</span>' + botoes;
             atualizarLabelDestinoSheet();
         }
@@ -893,7 +907,8 @@
             const el = document.getElementById('destino-label-sheet');
             if (!el) return;
             if (!destinoSelecionado) el.textContent = '—';
-            else if (destinoSelecionado.id === 'outro') el.textContent = 'Outro lugar';
+            else if (destinoSelecionado.id === 'sede') el.textContent = 'Sede (Moema)';
+            else if (destinoSelecionado.id === 'outros') el.textContent = 'Outros — rastreio livre';
             else el.textContent = destinoSelecionado.nomeCurto || destinoSelecionado.nome;
             atualizarBotoesNavegacao();
         }
@@ -901,20 +916,21 @@
         function atualizarBotoesNavegacao() {
             const nav = document.getElementById('sheet-navegar');
             if (!nav) return;
-            const ok = destinoSelecionado && destinoSelecionado.id !== 'outro' && destinoSelecionado.lat != null;
+            const ok = destinoSelecionado && destinoSelecionado.id !== 'outros' && destinoSelecionado.lat != null;
             nav.style.display = ok && !running ? 'flex' : 'none';
         }
 
         /** Navegação grátis: só abre link (sem API paga do Google). */
         function abrirNavegacao(tipo) {
-            if (!destinoSelecionado || destinoSelecionado.id === 'outro') {
-                return alert('Selecione um destino na barra ao lado.');
+            if (!destinoSelecionado || destinoSelecionado.id === 'outros') {
+                return alert('Navegação só para destinos fixos. Em "Outros" use só o rastreio.');
             }
             const dest = destinoSelecionado;
             const base = unidadesLista.find(u => u.matriz);
             let url;
             if (tipo === 'google') {
-                const origem = base ? 'origin=' + base.lat + ',' + base.lng + '&' : '';
+                const irParaSede = destinoSelecionado.id === 'sede';
+                const origem = (!irParaSede && base) ? 'origin=' + base.lat + ',' + base.lng + '&' : '';
                 url = 'https://www.google.com/maps/dir/?api=1&' + origem +
                     'destination=' + dest.lat + ',' + dest.lng + '&travelmode=driving';
             } else {
@@ -930,8 +946,13 @@
 
         function selecionarDestino(id) {
             if (running) return;
-            if (id === 'outro') {
-                destinoSelecionado = { id: 'outro', nome: 'Outro lugar', nomeCurto: 'Outro' };
+            if (id === 'sede') {
+                const base = unidadesLista.find(u => u.matriz);
+                destinoSelecionado = base
+                    ? { ...base, id: 'sede', nome: 'L.A. Moema — Sede', nomeCurto: 'Sede' }
+                    : null;
+            } else if (id === 'outros') {
+                destinoSelecionado = { id: 'outros', nome: 'Outros', nomeCurto: 'Outros' };
             } else {
                 destinoSelecionado = unidadesLista.find(u => u.id === id) || null;
             }
@@ -946,7 +967,7 @@
             if (!map) return;
             if (linhaDestino) { map.removeLayer(linhaDestino); linhaDestino = null; }
             if (running) return;
-            if (!destinoSelecionado || destinoSelecionado.id === 'outro') return;
+            if (!destinoSelecionado || destinoSelecionado.id === 'outros' || destinoSelecionado.id === 'sede') return;
             const base = unidadesLista.find(u => u.matriz);
             const dest = destinoSelecionado;
             if (!base || !dest.lat) return;
@@ -964,7 +985,7 @@
             const pts = [];
             const base = unidadesLista.find(u => u.matriz);
             if (base) pts.push([base.lat, base.lng]);
-            if (destinoSelecionado && destinoSelecionado.id !== 'outro' && destinoSelecionado.lat) {
+            if (destinoSelecionado && destinoSelecionado.id !== 'outros' && destinoSelecionado.lat) {
                 pts.push([destinoSelecionado.lat, destinoSelecionado.lng]);
             }
             if (path.length) path.forEach(p => pts.push(p));
@@ -1043,10 +1064,11 @@
         }
 
         function deveExibirUnidadeNoMapa(u, selId) {
+            if (destinoSelecionado && destinoSelecionado.id === 'outros') return !!u.matriz;
+            if (destinoSelecionado && destinoSelecionado.id === 'sede') return !!u.matriz;
             if (u.matriz) return true;
             if (!u.paradaRota) return false;
-            if (destinoSelecionado && destinoSelecionado.id === 'outro') return false;
-            if (destinoSelecionado && destinoSelecionado.id !== 'outro') return selId === u.id;
+            if (destinoSelecionado) return selId === u.id;
             return true;
         }
 
@@ -1058,7 +1080,7 @@
             unidadesLista.forEach(u => {
                 if (!deveExibirUnidadeNoMapa(u, selId)) return;
                 const isParada = !!u.paradaRota;
-                const selecionado = selId === u.id;
+                const selecionado = selId === u.id || (selId === 'sede' && u.matriz);
                 const isBase = !!u.matriz;
                 const balaoFixo = isBase || selecionado;
                 const sz = isBase ? 18 : (selecionado ? 18 : 12);
@@ -1152,7 +1174,7 @@
             const carId = fleet[idx].id;
 
             if (!running) {
-                if (!destinoSelecionado) return alert('Selecione para onde você vai (ou "Outro lugar").');
+                if (!destinoSelecionado) return alert('Selecione um destino na barra (ou "Outros" para rastreio livre).');
                 try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
                 running = true;
                 ultimoSnapAoVivo = 0;
