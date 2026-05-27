@@ -513,15 +513,16 @@
         .btn-nav {
             width: 100%;
             padding: 14px 16px;
-            border: 2px solid var(--black);
+            border: none;
             border-radius: 12px;
-            background: var(--white);
+            background: var(--yellow);
             color: var(--black);
             font-size: 0.88rem;
             font-weight: 800;
             cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
-        .btn-nav:active { background: var(--gray-bg); }
+        .btn-nav:active { background: var(--yellow-hover); }
         .btn-nav-osm {
             border-color: var(--gray-border);
             font-weight: 600;
@@ -922,7 +923,9 @@
                     : dest.lng + ',' + dest.lat;
                 url = 'https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=' + trecho;
             }
-            window.open(url, '_blank', 'noopener,noreferrer');
+            const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            if (mobile) window.location.href = url;
+            else window.open(url, '_blank', 'noopener,noreferrer');
         }
 
         function selecionarDestino(id) {
