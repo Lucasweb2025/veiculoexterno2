@@ -355,6 +355,27 @@
             font-weight: 800;
         }
         .endereco-rail-btn:disabled { opacity: 0.45; pointer-events: none; }
+        .endereco-rail-btn.trocar {
+            background: var(--white);
+            border: 2px solid var(--gray-border);
+            color: #555;
+            font-weight: 600;
+            min-height: 40px;
+        }
+        .btn-ja-saindo {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 10px;
+            border: 2px solid var(--black);
+            border-radius: 12px;
+            background: var(--white);
+            color: var(--black);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .btn-ja-saindo:active { background: var(--gray-bg); }
+        #tela-mapa.corrida-ativa .btn-ja-saindo { display: none; }
         .map-back {
             position: absolute;
             top: calc(12px + var(--safe-top));
@@ -726,6 +747,8 @@
                     <span class="sheet-navegar-hint">Grátis · abre o app de mapas do celular</span>
                 </div>
 
+                <button type="button" id="btn-ja-saindo" class="btn-ja-saindo" onclick="jaEstouSaindo()">Já estou saindo</button>
+
                 <div class="sheet-cta">
                     <div class="sheet-km-block">
                         <div class="sheet-km-big">
@@ -986,7 +1009,9 @@
             const img = document.getElementById('sheet-car-img');
             if (label) {
                 if (destinoSelecionado && destinoSelecionado.id === 'outros') {
-                    label.textContent = '→ Rastreio livre';
+                    label.textContent = destinoSelecionado.nomeCurto === 'Já saindo'
+                        ? '→ Já saindo'
+                        : '→ Rastreio livre';
                 } else if (destinoSelecionado) {
                     label.textContent = '→ ' + (destinoSelecionado.nomeCurto || destinoSelecionado.nome);
                 } else {
@@ -1000,9 +1025,21 @@
         function renderizarBarraEnderecos() {
             const rail = document.getElementById('enderecos-rail');
             if (!rail) return;
-            const destinos = unidadesLista.filter(u => u.paradaRota);
             const selId = destinoSelecionado ? destinoSelecionado.id : '';
             const dis = running ? ' disabled' : '';
+
+            if (destinoSelecionado && !running) {
+                const nome = destinoSelecionado.nomeCurto || destinoSelecionado.nome;
+                const end = (destinoSelecionado.endereco || '').replace(/"/g, '&quot;');
+                rail.innerHTML =
+                    '<span class="enderecos-rail-label">Destino</span>' +
+                    '<button type="button" class="endereco-rail-btn on"' + dis + ' title="' + end + '">' + nome + '</button>' +
+                    '<button type="button" class="endereco-rail-btn trocar"' + dis + ' onclick="trocarDestino()">Trocar</button>';
+                atualizarLabelDestinoSheet();
+                return;
+            }
+
+            const destinos = unidadesLista.filter(u => u.paradaRota);
             const botoes = destinos.map(d => {
                 const nome = d.nomeCurto || d.nome;
                 const on = selId === d.id ? ' on' : '';
@@ -1013,6 +1050,27 @@
                 '<button type="button" class="endereco-rail-btn outros' + (selId === 'outros' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'outros\')" title="Rastreio sem destino fixo">Outros</button>';
             rail.innerHTML = '<span class="enderecos-rail-label">Destinos</span>' + botoes;
             atualizarLabelDestinoSheet();
+        }
+
+        function trocarDestino() {
+            if (running) return;
+            destinoSelecionado = null;
+            renderizarBarraEnderecos();
+            atualizarBarraViagem();
+            renderizarUnidadesNoMapa();
+            atualizarLinhaDestino();
+            ajustarZoomMapaComUnidades();
+        }
+
+        function jaEstouSaindo() {
+            if (running) return;
+            if (!destinoSelecionado) {
+                destinoSelecionado = { id: 'outros', nome: 'Saída da sede', nomeCurto: 'Já saindo' };
+                renderizarBarraEnderecos();
+                atualizarBarraViagem();
+                renderizarUnidadesNoMapa();
+            }
+            toggleTracking();
         }
 
         function atualizarLabelDestinoSheet() {
