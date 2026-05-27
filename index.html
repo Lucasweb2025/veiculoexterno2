@@ -1504,8 +1504,6 @@
             }
             btn.disabled = true;
             btn.innerText = "Ajustando rota...";
-            pararRastreio();
-            running = false;
             const snappedPath = await snapToRoad(path);
             btn.innerText = "Salvando...";
             let kmSnapped = 0;
@@ -1525,17 +1523,17 @@
             try {
                 await db.ref('vehicles/' + carId + '/status').set("DISPONÍVEL");
                 await db.ref('vehicles/' + carId + '/odometer').transaction(c => (c || 0) + kmFinal);
-                db.ref('trips').push(trip);
+                await db.ref('trips').push(trip);
+                pararRastreio();
+                running = false;
                 localStorage.removeItem(TRIP_BACKUP_KEY);
                 alert("Viagem finalizada!\n" + kmFinal + " km");
                 location.reload();
             } catch (e) {
-                alert("Erro ao sincronizar. Tente novamente.");
+                alert("Erro ao sincronizar. A corrida continua ativa — toque em Finalizar de novo.");
                 btn.disabled = false;
                 btn.innerText = "Finalizar corrida";
                 btn.className = "btn-yellow stop";
-                running = true;
-                setModoCorridaAtiva(true);
             }
         }
     </script>
