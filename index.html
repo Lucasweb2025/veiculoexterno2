@@ -1259,10 +1259,12 @@
             const base = unidadesLista.find(u => u.matriz) || unidadesLista[0];
             const centro = base ? [base.lat, base.lng] : [-23.612783, -46.665663];
             const pin = L.divIcon({ className: 'car-pin-wrap', html: '<div class="car-pin"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+            const destinoAntes = destinoSelecionado;
             if (map) { map.remove(); map = null; }
             linhaSaidaBase = null;
             linhaDestino = null;
-            destinoSelecionado = null;
+            limparRotaPlanejada();
+            destinoSelecionado = destinoAntes;
             map = L.map('map', { zoomControl: false, attributionControl: false }).setView(centro, 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map);
             marker = L.marker(centro, { icon: pin, zIndexOffset: 1000 }).addTo(map);
@@ -1270,8 +1272,14 @@
             renderizarUnidadesNoMapa();
             renderizarBarraEnderecos();
             atualizarBarraViagem();
-            atualizarKmDisplay();
-            setTimeout(() => { map.invalidateSize(); ajustarZoomMapaComUnidades(); }, 300);
+            atualizarLabelDestinoSheet();
+            atualizarBotoesNavegacao();
+            if (destinoSelecionado) {
+                atualizarLinhaDestino();
+                ajustarZoomParaDestino();
+            } else {
+                setTimeout(() => { map.invalidateSize(); ajustarZoomMapaComUnidades(); }, 300);
+            }
             setTimeout(() => map.invalidateSize(), 800);
         }
 
@@ -1337,6 +1345,10 @@
         }
 
         function iniciarWatchGps(carId) {
+            if (watch) {
+                navigator.geolocation.clearWatch(watch);
+                watch = null;
+            }
             watch = navigator.geolocation.watchPosition(p => {
                     const acc = p.coords.accuracy;
                     const pos = [p.coords.latitude, p.coords.longitude];
@@ -1487,6 +1499,9 @@
 
         async function fecharCorrida() {
             const btn = document.getElementById('btn-master');
+            if (path.length < 2) {
+                return alert('Poucos pontos de GPS.\nAnde um pouco com a corrida ativa ou aguarde sinal melhor antes de finalizar.');
+            }
             btn.disabled = true;
             btn.innerText = "Ajustando rota...";
             pararRastreio();
@@ -1517,7 +1532,10 @@
             } catch (e) {
                 alert("Erro ao sincronizar. Tente novamente.");
                 btn.disabled = false;
-                btn.innerText = "Tentar salvar";
+                btn.innerText = "Finalizar corrida";
+                btn.className = "btn-yellow stop";
+                running = true;
+                setModoCorridaAtiva(true);
             }
         }
     </script>
