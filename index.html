@@ -504,6 +504,35 @@
             color: #666;
         }
         .sheet-destino-atual b { color: var(--black); }
+        .sheet-navegar {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            padding: 4px 0 10px;
+        }
+        .btn-nav {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--black);
+            border-radius: 12px;
+            background: var(--white);
+            color: var(--black);
+            font-size: 0.88rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .btn-nav:active { background: var(--gray-bg); }
+        .btn-nav-osm {
+            border-color: var(--gray-border);
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #555;
+        }
+        .sheet-navegar-hint {
+            font-size: 0.68rem;
+            color: #999;
+            text-align: center;
+        }
         .unidade-marker.selecionado {
             box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.55);
             transform: scale(1.15);
@@ -623,6 +652,12 @@
                 <div class="sheet-divider"></div>
 
                 <div id="sheet-destino-atual" class="sheet-destino-atual">Destino: <b id="destino-label-sheet">—</b></div>
+
+                <div id="sheet-navegar" class="sheet-navegar">
+                    <button type="button" class="btn-nav" onclick="abrirNavegacao('google')">Navegar no Google Maps</button>
+                    <button type="button" class="btn-nav btn-nav-osm" onclick="abrirNavegacao('osm')">Alternativa: mapa aberto (OSM)</button>
+                    <span class="sheet-navegar-hint">Grátis · abre o app de mapas do celular</span>
+                </div>
 
                 <div class="sheet-cta">
                     <div class="sheet-km-block">
@@ -859,6 +894,35 @@
             if (!destinoSelecionado) el.textContent = '—';
             else if (destinoSelecionado.id === 'outro') el.textContent = 'Outro lugar';
             else el.textContent = destinoSelecionado.nomeCurto || destinoSelecionado.nome;
+            atualizarBotoesNavegacao();
+        }
+
+        function atualizarBotoesNavegacao() {
+            const nav = document.getElementById('sheet-navegar');
+            if (!nav) return;
+            const ok = destinoSelecionado && destinoSelecionado.id !== 'outro' && destinoSelecionado.lat != null;
+            nav.style.display = ok && !running ? 'flex' : 'none';
+        }
+
+        /** Navegação grátis: só abre link (sem API paga do Google). */
+        function abrirNavegacao(tipo) {
+            if (!destinoSelecionado || destinoSelecionado.id === 'outro') {
+                return alert('Selecione um destino na barra ao lado.');
+            }
+            const dest = destinoSelecionado;
+            const base = unidadesLista.find(u => u.matriz);
+            let url;
+            if (tipo === 'google') {
+                const origem = base ? 'origin=' + base.lat + ',' + base.lng + '&' : '';
+                url = 'https://www.google.com/maps/dir/?api=1&' + origem +
+                    'destination=' + dest.lat + ',' + dest.lng + '&travelmode=driving';
+            } else {
+                const trecho = base
+                    ? base.lng + ',' + base.lat + ';' + dest.lng + ',' + dest.lat
+                    : dest.lng + ',' + dest.lat;
+                url = 'https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=' + trecho;
+            }
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
 
         function selecionarDestino(id) {
@@ -1091,6 +1155,7 @@
                 ultimoSnapAoVivo = 0;
                 renderizarBarraEnderecos();
                 renderizarUnidadesNoMapa();
+                atualizarBotoesNavegacao();
                 btn.innerText = "Finalizar";
                 btn.className = "btn-yellow stop";
                 mapFollowCar = true;
