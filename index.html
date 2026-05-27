@@ -253,6 +253,30 @@
             position: relative;
             min-height: 42vh;
             background: var(--map-bg);
+            transition: min-height 0.35s ease;
+        }
+        #tela-mapa.corrida-ativa .map-area-99 {
+            min-height: 68vh;
+        }
+        #tela-mapa.corrida-ativa .bottom-sheet {
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+        }
+        #tela-mapa.corrida-ativa .sheet-navegar,
+        #tela-mapa.corrida-ativa #sheet-destino-atual {
+            display: none !important;
+        }
+        .corrida-status-banner {
+            display: none;
+            margin: 0 0 8px;
+            padding: 10px 12px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            font-size: 0.78rem;
+            color: #1b5e20;
+            line-height: 1.4;
+        }
+        #tela-mapa.corrida-ativa .corrida-status-banner {
+            display: block;
         }
         #tela-mapa #map { width: 100%; height: 100%; }
         .leaflet-container { background: var(--map-bg); font-family: inherit; }
@@ -683,6 +707,10 @@
 
                 <div class="sheet-divider"></div>
 
+                <div id="corrida-status-banner" class="corrida-status-banner">
+                    <strong>Corrida ativa</strong> — mapa e rastreio na nossa tela. Siga a linha verde (rota) e a azul (onde você já passou).
+                </div>
+
                 <div class="sheet-row gps-row-sheet">
                     <span id="gps-dot" class="gps-dot wait"></span>
                     <span id="gps-status">Aguardando sinal GPS...</span>
@@ -705,7 +733,7 @@
                             <small>km nesta viagem</small>
                         </div>
                     </div>
-                    <button type="button" id="btn-master" class="btn-yellow" onclick="toggleTracking()">Iniciar rastreio</button>
+                    <button type="button" id="btn-master" class="btn-yellow" onclick="toggleTracking()">Iniciar corrida</button>
                 </div>
             </div>
         </div>
@@ -731,6 +759,8 @@
         const SENHA_MESTRA = "LACUSTOM2026";
         const TRIP_BACKUP_KEY = 'la_trip_backup_v34';
         const ORS_KEY = "5b3ce3597851110001cf6248f29a41aab5a84830a5a434027bbfeba8";
+        /** Google Maps embutido: precisa chave + faturamento Google Cloud (não é 100% grátis). Deixe vazio = mapa L.A. + rotas grátis (ORS). */
+        const GOOGLE_MAPS_JS_KEY = '';
         const GPS_ACCURACY_LIMIT = 60;
         const SNAP_AO_VIVO_MS = 14000;
         const SNAP_MIN_PONTOS = 4;
@@ -792,7 +822,9 @@
         let unidadesLista = UNIDADES_LA.slice();
         let snapAoVivoEmCurso = false;
         let ultimoSnapAoVivo = 0;
+        let polylinePlanejada = null;
         const CHECK_HOURS = 4;
+        const ROUTE_PLANNED_COLOR = '#34A853';
 
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1084,7 +1116,7 @@
 
         function voltarDoMapa() {
             if (running) return alert('Finalize a corrida antes de voltar.');
-            showScreen('tela-motorista');
+            showScreen('tela-veiculo');
         }
 
         function atualizarGpsUi(acc, modo) {
@@ -1218,16 +1250,10 @@
             }
         }
 
-        function setDriver(el, n) {
-            document.querySelectorAll('.driver-card').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected');
-            driver = n;
-        }
-
         async function initOperation() {
-            if (!driver) return alert("Selecione o motorista!");
+            if (!driver) return alert("Selecione o motorista primeiro.");
             atualizarBarraViagem();
-            proximaTela('tela-motorista', 'tela-mapa');
+            proximaTela('tela-veiculo', 'tela-mapa');
             mapFollowCar = true;
             unidadesLista = await carregarUnidadesFirebase();
             const base = unidadesLista.find(u => u.matriz) || unidadesLista[0];
@@ -1249,41 +1275,69 @@
             setTimeout(() => map.invalidateSize(), 800);
         }
 
-        async function toggleTracking() {
-            const btn = document.getElementById('btn-master');
-            const carId = fleet[idx].id;
+        function limparRotaPlanejada() {
+            if (polylinePlanejada && map) {
+                map.removeLayer(polylinePlanejada);
+                polylinePlanejada = null;
+            }
+        }
 
-            if (!running) {
-                if (!destinoSelecionado) return alert('Selecione um destino na barra (ou "Outros" para rastreio livre).');
-                try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
-                running = true;
-                ultimoSnapAoVivo = 0;
-                renderizarBarraEnderecos();
-                renderizarUnidadesNoMapa();
-                atualizarBotoesNavegacao();
-                btn.innerText = "Finalizar";
-                btn.className = "btn-yellow stop";
-                mapFollowCar = true;
-                startTime = Date.now();
-                atualizarGpsUi(99, 'wait');
-                const btnRota = document.getElementById('btn-ver-rota');
-                if (btnRota) { btnRota.style.display = 'block'; btnRota.textContent = 'Trajeto'; }
-                db.ref('vehicles/' + carId + '/status').set("EM MOVIMENTO");
-                window.addEventListener('beforeunload', alertaFechar);
+        function setModoCorridaAtiva(ativo) {
+            const tela = document.getElementById('tela-mapa');
+            if (tela) tela.classList.toggle('corrida-ativa', ativo);
+        }
 
-                checkInterval = setInterval(() => {
-                    const hrs = Math.floor((Date.now() - startTime) / 3600000);
-                    if (hrs > 0 && hrs % CHECK_HOURS === 0) {
-                        if (confirm(`Corrida ativa há ${hrs}h!\nFinalizar agora?`)) fecharCorrida();
-                    }
-                }, 60000);
+        function solicitarPermissaoLocalizacao() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('no_geo'));
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                    () => resolve(),
+                    err => reject(err),
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+                );
+            });
+        }
 
-                timer = setInterval(() => {
-                    document.getElementById('tempo').innerText = formatarTempo(Date.now() - startTime);
-                    salvarBackupViagem();
-                }, 1000);
+        async function desenharRotaPlanejadaAteDestino() {
+            limparRotaPlanejada();
+            if (!map || !destinoSelecionado || destinoSelecionado.id === 'outros' || destinoSelecionado.lat == null) return;
+            return new Promise(resolve => {
+                navigator.geolocation.getCurrentPosition(async p => {
+                    const coords = [
+                        [p.coords.longitude, p.coords.latitude],
+                        [destinoSelecionado.lng, destinoSelecionado.lat]
+                    ];
+                    try {
+                        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+                            method: 'POST',
+                            headers: { 'Authorization': ORS_KEY, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ coordinates: coords })
+                        });
+                        if (!res.ok) { resolve(); return; }
+                        const data = await res.json();
+                        if (!data.features || !data.features[0]) { resolve(); return; }
+                        const pts = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                        polylinePlanejada = L.polyline(pts, {
+                            color: ROUTE_PLANNED_COLOR,
+                            weight: 6,
+                            opacity: 0.85,
+                            lineCap: 'round',
+                            lineJoin: 'round'
+                        }).addTo(map);
+                        const bounds = L.latLngBounds(pts);
+                        if (path.length) path.forEach(pt => bounds.extend(pt));
+                        map.fitBounds(bounds, { padding: [70, 70], maxZoom: 16 });
+                    } catch (e) { /* sem rota planejada */ }
+                    resolve();
+                }, () => resolve(), { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+            });
+        }
 
-                watch = navigator.geolocation.watchPosition(p => {
+        function iniciarWatchGps(carId) {
+            watch = navigator.geolocation.watchPosition(p => {
                     const acc = p.coords.accuracy;
                     const pos = [p.coords.latitude, p.coords.longitude];
                     if (acc > GPS_ACCURACY_LIMIT) { atualizarGpsUi(acc, 'bad'); return; }
@@ -1321,8 +1375,62 @@
                     if (err.code === 1) alert("Ative a localização nas configurações.");
                     else if (err.code === 2) alert("GPS indisponível.");
                 }, { enableHighAccuracy: true, maximumAge: 0, timeout: 25000 });
+        }
+
+        async function toggleTracking() {
+            const btn = document.getElementById('btn-master');
+            const carId = fleet[idx].id;
+
+            if (!running) {
+                if (!destinoSelecionado) return alert('Selecione um destino na barra (ou "Outros" para corrida livre).');
+                btn.disabled = true;
+                btn.innerText = 'Aguardando GPS...';
+                try {
+                    await solicitarPermissaoLocalizacao();
+                } catch (err) {
+                    btn.disabled = false;
+                    btn.innerText = 'Iniciar corrida';
+                    if (err && err.code === 1) return alert('Permita a localização para iniciar a corrida.\n\nConfigurações do celular → este site → Localização.');
+                    return alert('Não foi possível obter GPS. Tente de novo ao ar livre.');
+                }
+                try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+                running = true;
+                setModoCorridaAtiva(true);
+                ultimoSnapAoVivo = 0;
+                path = [];
+                dist = 0;
+                if (polyline) polyline.setLatLngs([]);
+                renderizarBarraEnderecos();
+                renderizarUnidadesNoMapa();
+                atualizarBotoesNavegacao();
+                atualizarKmDisplay();
+                btn.disabled = false;
+                btn.innerText = 'Finalizar corrida';
+                btn.className = 'btn-yellow stop';
+                mapFollowCar = true;
+                startTime = Date.now();
+                atualizarGpsUi(99, 'wait');
+                const btnRota = document.getElementById('btn-ver-rota');
+                if (btnRota) { btnRota.style.display = 'block'; btnRota.textContent = 'Trajeto'; }
+                db.ref('vehicles/' + carId + '/status').set('EM MOVIMENTO');
+                window.addEventListener('beforeunload', alertaFechar);
+                await desenharRotaPlanejadaAteDestino();
+
+                checkInterval = setInterval(() => {
+                    const hrs = Math.floor((Date.now() - startTime) / 3600000);
+                    if (hrs > 0 && hrs % CHECK_HOURS === 0) {
+                        if (confirm(`Corrida ativa há ${hrs}h!\nFinalizar agora?`)) fecharCorrida();
+                    }
+                }, 60000);
+
+                timer = setInterval(() => {
+                    document.getElementById('tempo').innerText = formatarTempo(Date.now() - startTime);
+                    salvarBackupViagem();
+                }, 1000);
+
+                iniciarWatchGps(carId);
             } else {
-                if (!confirm("Finalizar esta corrida?")) return;
+                if (!confirm('Finalizar esta corrida?')) return;
                 fecharCorrida();
             }
         }
@@ -1335,6 +1443,8 @@
             if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
             if (wakeLock) { try { wakeLock.release(); } catch(e) {} wakeLock = null; }
             window.removeEventListener('beforeunload', alertaFechar);
+            limparRotaPlanejada();
+            setModoCorridaAtiva(false);
         }
 
         function amostragemPath(pontos, max) {
