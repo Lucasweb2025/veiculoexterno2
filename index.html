@@ -204,6 +204,9 @@
             width: 100%;
             margin-bottom: 16px;
         }
+        .driver-card-outro {
+            grid-column: 1 / -1;
+        }
         .driver-card {
             padding: 18px 12px;
             border-radius: 12px;
@@ -220,6 +223,23 @@
             border-color: var(--black);
             background: var(--yellow);
             color: var(--black);
+        }
+        .motorista-saudacao {
+            width: 100%;
+            text-align: center;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--black);
+            margin-bottom: 8px;
+        }
+        .motorista-outro-wrap {
+            display: none;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+        .motorista-outro-wrap .input {
+            margin-bottom: 0;
+            text-align: left;
         }
 
         /* —— Tela de viagem (mapa) —— */
@@ -576,19 +596,48 @@
 
     <div id="app-content" style="display:none; height:100%;">
 
-        <!-- VEÍCULO -->
-        <div id="tela-veiculo" class="screen">
+        <!-- MOTORISTA (passo 1) -->
+        <div id="tela-motorista" class="screen">
             <div class="top-bar">
                 <div>
-                    <h1>Seu veículo</h1>
+                    <h1>Motorista</h1>
                     <div class="sub">Passo 1 de 3</div>
                 </div>
                 <div class="avatar"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" alt="L.A."></div>
             </div>
             <div class="body-light">
                 <div class="steps">
-                    <div class="step on">Veículo</div>
+                    <div class="step on">Motorista</div>
+                    <div class="step">Veículo</div>
+                    <div class="step">Viagem</div>
+                </div>
+                <p id="motorista-saudacao" class="motorista-saudacao">Quem está dirigindo?</p>
+                <div class="driver-grid" style="width:100%;">
+                    <div class="driver-card" onclick="setDriver(this, 'Marco')">Marco</div>
+                    <div class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
+                    <div class="driver-card driver-card-outro" onclick="setDriverOutro(this)">Outro</div>
+                </div>
+                <div id="motorista-outro-wrap" class="motorista-outro-wrap">
+                    <input type="text" id="motorista-outro-nome" class="input" placeholder="Nome do motorista" maxlength="40" oninput="atualizarSaudacaoMotorista()">
+                </div>
+                <button class="btn btn-yellow" style="margin-top:auto;width:100%;" onclick="confirmarMotorista()">Próximo</button>
+                <button type="button" class="btn-ghost" onclick="logout()">Sair</button>
+            </div>
+        </div>
+
+        <!-- VEÍCULO (passo 2) -->
+        <div id="tela-veiculo" class="screen">
+            <div class="top-bar">
+                <div>
+                    <h1>Seu veículo</h1>
+                    <div class="sub" id="motorista-veiculo-hint">Passo 2 de 3</div>
+                </div>
+                <div class="avatar"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" alt="L.A."></div>
+            </div>
+            <div class="body-light">
+                <div class="steps">
                     <div class="step">Motorista</div>
+                    <div class="step on">Veículo</div>
                     <div class="step">Viagem</div>
                 </div>
                 <div class="card car-box">
@@ -600,32 +649,8 @@
                     <button type="button" class="nav-arrow" onclick="mudar(-1)">❮</button>
                     <button type="button" class="nav-arrow" onclick="mudar(1)">❯</button>
                 </div>
-                <button class="btn btn-primary" style="margin-top:8px;" onclick="proximaTela('tela-veiculo', 'tela-motorista')">Próximo</button>
-                <button type="button" class="btn-ghost" onclick="logout()">Sair</button>
-            </div>
-        </div>
-
-        <!-- MOTORISTA -->
-        <div id="tela-motorista" class="screen">
-            <div class="top-bar">
-                <div>
-                    <h1>Seu perfil</h1>
-                    <div class="sub" id="motorista-veiculo-hint">Passo 2 de 3</div>
-                </div>
-                <div class="avatar"><img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" alt="L.A."></div>
-            </div>
-            <div class="body-light">
-                <div class="steps">
-                    <div class="step">Veículo</div>
-                    <div class="step on">Motorista</div>
-                    <div class="step">Viagem</div>
-                </div>
-                <div class="driver-grid" style="width:100%;">
-                    <div class="driver-card" onclick="setDriver(this, 'Marco')">Marco</div>
-                    <div class="driver-card" onclick="setDriver(this, 'Fabio')">Fabio</div>
-                </div>
-                <button class="btn btn-yellow" style="margin-top:auto;width:100%;" onclick="initOperation()">Ir para o mapa</button>
-                <button type="button" class="btn-ghost" onclick="location.reload()">Voltar</button>
+                <button class="btn btn-yellow" style="margin-top:8px;" onclick="initOperation()">Ir para o mapa</button>
+                <button type="button" class="btn-ghost" onclick="voltarParaMotorista()">Voltar</button>
             </div>
         </div>
 
@@ -757,7 +782,7 @@
             }
         ];
 
-        let idx = 0, driver = "", running = false, dist = 0, path = [], watch, map, marker, polyline, startTime, timer, wakeLock = null;
+        let idx = 0, driver = "", driverModoOutro = false, running = false, dist = 0, path = [], watch, map, marker, polyline, startTime, timer, wakeLock = null;
         let currentOdoRef = null, checkInterval = null;
         let mapFollowCar = true;
         let unidadesLayer = null;
@@ -780,7 +805,7 @@
                 localStorage.setItem('sessao_la_cloud', 'ativa');
                 document.getElementById('tela-login').classList.remove('active');
                 document.getElementById('app-content').style.display = 'block';
-                showScreen('tela-veiculo');
+                showScreen('tela-motorista');
                 mudar(0);
                 verificarViagemPendente();
             } else { alert("Senha incorreta!"); }
@@ -790,7 +815,7 @@
             if (localStorage.getItem('sessao_la_cloud') === 'ativa') {
                 document.getElementById('tela-login').classList.remove('active');
                 document.getElementById('app-content').style.display = 'block';
-                showScreen('tela-veiculo');
+                showScreen('tela-motorista');
                 mudar(0);
                 verificarViagemPendente();
             }
@@ -859,8 +884,63 @@
             currentOdoRef.on('value', s => {
                 document.getElementById('car-odo').innerText = `Odômetro: ${(s.val() || 0).toFixed(2)} km`;
             });
+            atualizarHintVeiculo();
+        }
+
+        function getNomeMotoristaAtual() {
+            if (driverModoOutro) {
+                const inp = document.getElementById('motorista-outro-nome');
+                return inp ? inp.value.trim() : '';
+            }
+            return driver;
+        }
+
+        function atualizarSaudacaoMotorista() {
+            const el = document.getElementById('motorista-saudacao');
+            if (!el) return;
+            const nome = getNomeMotoristaAtual();
+            el.textContent = nome ? 'Olá, ' + nome : 'Quem está dirigindo?';
+        }
+
+        function atualizarHintVeiculo() {
             const hint = document.getElementById('motorista-veiculo-hint');
-            if (hint) hint.textContent = fleet[idx].nome;
+            if (!hint) return;
+            const nome = driver || '—';
+            hint.textContent = 'Olá, ' + nome + ' · ' + fleet[idx].nome;
+        }
+
+        function setDriver(el, n) {
+            driverModoOutro = false;
+            const wrap = document.getElementById('motorista-outro-wrap');
+            if (wrap) wrap.style.display = 'none';
+            document.querySelectorAll('.driver-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            driver = n;
+            atualizarSaudacaoMotorista();
+        }
+
+        function setDriverOutro(el) {
+            driverModoOutro = true;
+            driver = '';
+            document.querySelectorAll('.driver-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            const wrap = document.getElementById('motorista-outro-wrap');
+            if (wrap) wrap.style.display = 'block';
+            const inp = document.getElementById('motorista-outro-nome');
+            if (inp) { inp.focus(); atualizarSaudacaoMotorista(); }
+        }
+
+        function confirmarMotorista() {
+            const nome = getNomeMotoristaAtual();
+            if (!nome) return alert('Selecione o motorista ou digite o nome em "Outro".');
+            driver = nome;
+            driverModoOutro = false;
+            proximaTela('tela-motorista', 'tela-veiculo');
+            atualizarHintVeiculo();
+        }
+
+        function voltarParaMotorista() {
+            showScreen('tela-motorista');
         }
 
         function proximaTela(a, p) {
