@@ -443,6 +443,56 @@
             line-height: 1.5;
         }
         .sheet-unidades strong { color: var(--black); font-size: 0.78rem; }
+        .sheet-destinos {
+            padding: 4px 0 8px;
+        }
+        .sheet-destinos-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--black);
+            margin-bottom: 4px;
+        }
+        .sheet-destinos-hint {
+            font-size: 0.72rem;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        .destinos-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .destino-chip {
+            flex: 1 1 calc(50% - 8px);
+            min-width: 120px;
+            padding: 12px 10px;
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            background: #fafafa;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--black);
+            cursor: pointer;
+            text-align: center;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .destino-chip.on {
+            border-color: #276EF1;
+            background: #eef4ff;
+            color: #276EF1;
+        }
+        .destino-chip.outro {
+            flex: 1 1 100%;
+            font-weight: 600;
+            color: #666;
+        }
+        .destino-chip.outro.on {
+            color: #276EF1;
+        }
+        .unidade-marker.selecionado {
+            box-shadow: 0 0 0 4px rgba(39, 110, 241, 0.45);
+            transform: scale(1.15);
+        }
     </style>
 </head>
 <body onload="verificarSessao()">
@@ -554,7 +604,11 @@
 
                 <div class="sheet-divider"></div>
 
-                <div id="unidades-resumo" class="sheet-unidades"></div>
+                <div class="sheet-destinos">
+                    <div class="sheet-destinos-title">Para onde você vai?</div>
+                    <p class="sheet-destinos-hint">Escolha o destino e depois inicie o rastreio</p>
+                    <div id="destinos-chips" class="destinos-chips"></div>
+                </div>
 
                 <div class="sheet-cta">
                     <div class="sheet-km-block">
@@ -607,45 +661,43 @@
             },
             {
                 id: 'vila-olimpia',
-                nome: 'Parada 1 — Vila Olímpia',
+                nome: 'Vila Olímpia',
+                nomeCurto: 'Vila Olímpia',
                 endereco: 'Av. Dr. Cardoso de Melo, 1507 — Vila Olímpia, SP',
                 lat: -23.5970601,
                 lng: -46.6878637,
                 matriz: false,
-                paradaRota: true,
-                ordemRota: 1
+                paradaRota: true
             },
             {
-                id: 'clodomiro',
-                nome: 'Parada 2 — Vila Nova Conceição',
+                id: 'rabi',
+                nome: 'Rabi',
+                nomeCurto: 'Rabi',
                 endereco: 'R. Clodomiro Amazonas, 1000 — Vila Nova Conceição, SP',
                 lat: -23.5930138,
                 lng: -46.6773446,
                 matriz: false,
-                paradaRota: true,
-                ordemRota: 2
+                paradaRota: true
             },
             {
-                id: 'nacoes-unidas',
-                nome: 'Parada 3 — Nações Unidas',
+                id: 'stutt',
+                nome: 'Stutt',
+                nomeCurto: 'Stutt',
                 endereco: 'Av. das Nações Unidas, 16.427 — Várzea de Baixo, SP',
                 lat: -23.6352384,
                 lng: -46.7182594,
                 matriz: false,
-                paradaRota: true,
-                ordemRota: 3
+                paradaRota: true
             }
         ];
-
-        /** Ordem da rota fixa do motorista (ids em UNIDADES_LA) */
-        const ORDEM_ROTA_MOTORISTA = ['vila-olimpia', 'clodomiro', 'nacoes-unidas'];
 
         let idx = 0, driver = "", running = false, dist = 0, path = [], watch, map, marker, polyline, startTime, timer, wakeLock = null;
         let currentOdoRef = null, checkInterval = null;
         let mapFollowCar = true;
         let unidadesLayer = null;
         let linhaSaidaBase = null;
-        let linhaRotaFixa = null;
+        let linhaDestino = null;
+        let destinoSelecionado = null;
         let unidadesLista = UNIDADES_LA.slice();
         const CHECK_HOURS = 4;
 
@@ -696,7 +748,10 @@
 
         async function salvarViagemRecuperada(data) {
             try {
-                const trip = { car: data.car, driver: data.driver, km: data.km, time: data.time, date: data.date, path: data.path };
+                const trip = {
+                    car: data.car, driver: data.driver, km: data.km, time: data.time, date: data.date, path: data.path,
+                    destino: data.destino || '—', destinoId: data.destinoId || null
+                };
                 await db.ref('vehicles/' + data.carId + '/status').set("DISPONÍVEL");
                 await db.ref('vehicles/' + data.carId + '/odometer').transaction(c => (c || 0) + data.km);
                 db.ref('trips').push(trip);
@@ -712,7 +767,9 @@
                 km: parseFloat((dist / 1000).toFixed(2)),
                 time: document.getElementById('tempo').innerText,
                 date: new Date().toLocaleString('pt-BR'),
-                path, startTime
+                path, startTime,
+                destino: destinoSelecionado ? destinoSelecionado.nomeCurto || destinoSelecionado.nome : null,
+                destinoId: destinoSelecionado ? destinoSelecionado.id : null
             }));
         }
 
@@ -747,9 +804,74 @@
             const label = document.getElementById('trip-activity-label');
             const drv = document.getElementById('trip-driver-label');
             const img = document.getElementById('sheet-car-img');
-            if (label) label.textContent = fleet[idx].nome;
+            if (label) {
+                if (destinoSelecionado && destinoSelecionado.id !== 'outro') {
+                    label.textContent = '→ ' + (destinoSelecionado.nomeCurto || destinoSelecionado.nome);
+                } else if (destinoSelecionado && destinoSelecionado.id === 'outro') {
+                    label.textContent = '→ Outro lugar';
+                } else {
+                    label.textContent = fleet[idx].nome;
+                }
+            }
             if (drv) drv.textContent = driver;
             if (img) img.src = fleet[idx].foto;
+        }
+
+        function renderizarChipsDestino() {
+            const el = document.getElementById('destinos-chips');
+            if (!el) return;
+            const destinos = unidadesLista.filter(u => u.paradaRota);
+            const selId = destinoSelecionado ? destinoSelecionado.id : '';
+            el.innerHTML = destinos.map(d => {
+                const nome = d.nomeCurto || d.nome;
+                const on = selId === d.id ? ' on' : '';
+                return '<button type="button" class="destino-chip' + on + '" data-id="' + d.id + '" onclick="selecionarDestino(\'' + d.id + '\')">' + nome + '</button>';
+            }).join('') +
+                '<button type="button" class="destino-chip outro' + (selId === 'outro' ? ' on' : '') + '" data-id="outro" onclick="selecionarDestino(\'outro\')">Outro lugar</button>';
+        }
+
+        function selecionarDestino(id) {
+            if (running) return;
+            if (id === 'outro') {
+                destinoSelecionado = { id: 'outro', nome: 'Outro lugar', nomeCurto: 'Outro' };
+            } else {
+                destinoSelecionado = unidadesLista.find(u => u.id === id) || null;
+            }
+            renderizarChipsDestino();
+            atualizarBarraViagem();
+            renderizarUnidadesNoMapa();
+            atualizarLinhaDestino();
+            ajustarZoomParaDestino();
+        }
+
+        function atualizarLinhaDestino() {
+            if (!map) return;
+            if (linhaDestino) { map.removeLayer(linhaDestino); linhaDestino = null; }
+            if (!destinoSelecionado || destinoSelecionado.id === 'outro') return;
+            const base = unidadesLista.find(u => u.matriz);
+            const dest = destinoSelecionado;
+            if (!base || !dest.lat) return;
+            linhaDestino = L.polyline([[base.lat, base.lng], [dest.lat, dest.lng]], {
+                color: ROUTE_COLOR,
+                weight: 4,
+                dashArray: '10, 14',
+                opacity: 0.5,
+                lineCap: 'round'
+            }).addTo(map);
+        }
+
+        function ajustarZoomParaDestino() {
+            if (!map) return;
+            const pts = [];
+            const base = unidadesLista.find(u => u.matriz);
+            if (base) pts.push([base.lat, base.lng]);
+            if (destinoSelecionado && destinoSelecionado.id !== 'outro' && destinoSelecionado.lat) {
+                pts.push([destinoSelecionado.lat, destinoSelecionado.lng]);
+            }
+            if (path.length) path.forEach(p => pts.push(p));
+            if (pts.length === 0) return;
+            if (pts.length === 1) map.setView(pts[0], 16);
+            else map.fitBounds(L.latLngBounds(pts), { padding: [70, 70], maxZoom: 16, animate: true });
         }
 
         function atualizarKmDisplay() {
@@ -820,65 +942,33 @@
             });
         }
 
-        function atualizarResumoUnidades() {
-            const el = document.getElementById('unidades-resumo');
-            if (!el) return;
-            const base = unidadesLista.filter(u => !u.paradaRota);
-            const paradas = unidadesLista.filter(u => u.paradaRota)
-                .sort((a, b) => (a.ordemRota || 99) - (b.ordemRota || 99));
-            let html = '<strong>Base</strong><br>' + base.map(u =>
-                (u.matriz ? '● ' : '○ ') + u.nome
-            ).join('<br>');
-            if (paradas.length) {
-                html += '<br><br><strong>Rota do motorista</strong><br>' + paradas.map(u =>
-                    (u.ordemRota || '') + '. ' + u.nome.replace(/^Parada \d+ — /, '')
-                ).join('<br>');
-            }
-            el.innerHTML = html;
-        }
-
         function renderizarUnidadesNoMapa() {
             if (!map) return;
             if (unidadesLayer) map.removeLayer(unidadesLayer);
             unidadesLayer = L.layerGroup();
+            const selId = destinoSelecionado ? destinoSelecionado.id : null;
             unidadesLista.forEach(u => {
                 const isParada = !!u.paradaRota;
-                const sz = u.matriz ? 18 : (isParada ? 16 : 14);
+                const selecionado = selId === u.id;
+                const sz = u.matriz ? 18 : (selecionado ? 18 : (isParada ? 16 : 14));
                 const icon = L.divIcon({
                     className: 'unidade-marker-wrap',
-                    html: '<div class="unidade-marker' + (u.matriz ? ' matriz' : '') + (isParada ? ' parada-rota' : '') + '"></div>',
+                    html: '<div class="unidade-marker' + (u.matriz ? ' matriz' : '') + (isParada ? ' parada-rota' : '') + (selecionado ? ' selecionado' : '') + '"></div>',
                     iconSize: [sz, sz],
                     iconAnchor: [sz / 2, sz / 2]
                 });
-                L.marker([u.lat, u.lng], { icon, zIndexOffset: 400 })
+                const m = L.marker([u.lat, u.lng], { icon, zIndexOffset: selecionado ? 500 : 400 })
                     .bindTooltip(
                         '<div class="unidade-tip"><b>' + u.nome + '</b><span>' + u.endereco + '</span></div>',
                         { permanent: true, direction: 'top', offset: [0, -12], className: 'unidade-tooltip' }
-                    )
-                    .addTo(unidadesLayer);
+                    );
+                if (isParada && !running) {
+                    m.on('click', () => selecionarDestino(u.id));
+                }
+                m.addTo(unidadesLayer);
             });
             unidadesLayer.addTo(map);
-            renderizarRotaFixa();
-            atualizarResumoUnidades();
-        }
-
-        function renderizarRotaFixa() {
-            if (!map) return;
-            if (linhaRotaFixa) { map.removeLayer(linhaRotaFixa); linhaRotaFixa = null; }
-            const pts = ORDEM_ROTA_MOTORISTA.map(id => {
-                const u = unidadesLista.find(x => x.id === id);
-                return u ? [u.lat, u.lng] : null;
-            }).filter(Boolean);
-            if (pts.length >= 2) {
-                linhaRotaFixa = L.polyline(pts, {
-                    color: ROUTE_COLOR,
-                    weight: 4,
-                    dashArray: '10, 14',
-                    opacity: 0.55,
-                    lineCap: 'round',
-                    lineJoin: 'round'
-                }).addTo(map);
-            }
+            atualizarLinhaDestino();
         }
 
         function atualizarLinhaSaidaDaBase() {
@@ -929,12 +1019,15 @@
             const pin = L.divIcon({ className: 'car-pin-wrap', html: '<div class="car-pin"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
             if (map) { map.remove(); map = null; }
             linhaSaidaBase = null;
-            linhaRotaFixa = null;
+            linhaDestino = null;
+            destinoSelecionado = null;
             map = L.map('map', { zoomControl: false, attributionControl: false }).setView(centro, 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map);
             marker = L.marker(centro, { icon: pin, zIndexOffset: 1000 }).addTo(map);
             polyline = L.polyline([], { color: ROUTE_COLOR, weight: 7, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }).addTo(map);
             renderizarUnidadesNoMapa();
+            renderizarChipsDestino();
+            atualizarBarraViagem();
             atualizarKmDisplay();
             setTimeout(() => { map.invalidateSize(); ajustarZoomMapaComUnidades(); }, 300);
             setTimeout(() => map.invalidateSize(), 800);
@@ -945,6 +1038,7 @@
             const carId = fleet[idx].id;
 
             if (!running) {
+                if (!destinoSelecionado) return alert('Selecione para onde você vai (ou "Outro lugar").');
                 try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
                 running = true;
                 btn.innerText = "Finalizar";
@@ -1058,7 +1152,14 @@
             }
             const kmFinal = parseFloat((kmSnapped / 1000).toFixed(2));
             const carId = fleet[idx].id;
-            const trip = { car: fleet[idx].nome, driver, km: kmFinal, time: document.getElementById('tempo').innerText, date: new Date().toLocaleString('pt-BR'), path: snappedPath };
+            const trip = {
+                car: fleet[idx].nome, driver, km: kmFinal,
+                time: document.getElementById('tempo').innerText,
+                date: new Date().toLocaleString('pt-BR'),
+                path: snappedPath,
+                destino: destinoSelecionado ? (destinoSelecionado.nomeCurto || destinoSelecionado.nome) : '—',
+                destinoId: destinoSelecionado ? destinoSelecionado.id : null
+            };
             try {
                 await db.ref('vehicles/' + carId + '/status').set("DISPONÍVEL");
                 await db.ref('vehicles/' + carId + '/odometer').transaction(c => (c || 0) + kmFinal);
