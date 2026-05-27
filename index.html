@@ -658,6 +658,8 @@
         const TRIP_BACKUP_KEY = 'la_trip_backup_v34';
         const ORS_KEY = "5b3ce3597851110001cf6248f29a41aab5a84830a5a434027bbfeba8";
         const GPS_ACCURACY_LIMIT = 60;
+        const SNAP_AO_VIVO_MS = 14000;
+        const SNAP_MIN_PONTOS = 4;
         const fleet = [
             { id: "UNO", nome: "UNO VIVACE", foto: "https://i.ibb.co/4Lq2XH7/UNO.jpg" },
             { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
@@ -677,7 +679,7 @@
             {
                 id: 'vila-olimpia',
                 nome: 'Stuttgart — Vila Olímpia',
-                nomeCurto: 'Vila Olímpia',
+                nomeCurto: 'Stuttgart',
                 endereco: 'Av. Dr. Cardoso de Melo, 1507 — Vila Olímpia, SP — CEP 04548-005',
                 lat: -23.5970601,
                 lng: -46.6878637,
@@ -714,6 +716,8 @@
         let linhaDestino = null;
         let destinoSelecionado = null;
         let unidadesLista = UNIDADES_LA.slice();
+        let snapAoVivoEmCurso = false;
+        let ultimoSnapAoVivo = 0;
         const CHECK_HOURS = 4;
 
         function showScreen(id) {
@@ -874,6 +878,7 @@
         function atualizarLinhaDestino() {
             if (!map) return;
             if (linhaDestino) { map.removeLayer(linhaDestino); linhaDestino = null; }
+            if (running) return;
             if (!destinoSelecionado || destinoSelecionado.id === 'outro') return;
             const base = unidadesLista.find(u => u.matriz);
             const dest = destinoSelecionado;
@@ -957,6 +962,7 @@
                     const lista = Object.entries(val).map(([id, u]) => ({
                         id,
                         nome: u.nome || id,
+                        nomeCurto: u.nomeCurto || u.nome || id,
                         endereco: u.endereco || '',
                         lat: parseFloat(u.lat),
                         lng: parseFloat(u.lng),
@@ -969,29 +975,40 @@
             });
         }
 
+        function deveExibirUnidadeNoMapa(u, selId) {
+            if (u.matriz) return true;
+            if (!u.paradaRota) return false;
+            if (destinoSelecionado && destinoSelecionado.id === 'outro') return false;
+            if (destinoSelecionado && destinoSelecionado.id !== 'outro') return selId === u.id;
+            return true;
+        }
+
         function renderizarUnidadesNoMapa() {
             if (!map) return;
             if (unidadesLayer) map.removeLayer(unidadesLayer);
             unidadesLayer = L.layerGroup();
             const selId = destinoSelecionado ? destinoSelecionado.id : null;
             unidadesLista.forEach(u => {
+                if (!deveExibirUnidadeNoMapa(u, selId)) return;
                 const isParada = !!u.paradaRota;
                 const selecionado = selId === u.id;
-                const sz = u.matriz ? 18 : (selecionado ? 18 : (isParada ? 16 : 14));
+                const isBase = !!u.matriz;
+                const balaoFixo = isBase || selecionado;
+                const sz = isBase ? 18 : (selecionado ? 18 : 12);
                 const icon = L.divIcon({
                     className: 'unidade-marker-wrap',
-                    html: '<div class="unidade-marker' + (u.matriz ? ' matriz' : '') + (isParada ? ' parada-rota' : '') + (selecionado ? ' selecionado' : '') + '"></div>',
+                    html: '<div class="unidade-marker' + (isBase ? ' matriz' : '') + (isParada ? ' parada-rota' : '') + (selecionado ? ' selecionado' : '') + '"></div>',
                     iconSize: [sz, sz],
                     iconAnchor: [sz / 2, sz / 2]
                 });
-                const m = L.marker([u.lat, u.lng], { icon, zIndexOffset: selecionado ? 500 : 400 })
-                    .bindTooltip(
-                        '<div class="unidade-tip"><b>' + u.nome + '</b><span>' + u.endereco + '</span></div>',
-                        { permanent: true, direction: 'top', offset: [0, -12], className: 'unidade-tooltip' }
-                    );
-                if (isParada && !running) {
-                    m.on('click', () => selecionarDestino(u.id));
+                const tipHtml = '<div class="unidade-tip"><b>' + u.nome + '</b><span>' + u.endereco + '</span></div>';
+                const m = L.marker([u.lat, u.lng], { icon, zIndexOffset: selecionado || isBase ? 500 : 400 });
+                if (balaoFixo) {
+                    m.bindTooltip(tipHtml, { permanent: true, direction: 'top', offset: [0, -12], className: 'unidade-tooltip' });
+                } else {
+                    m.bindTooltip(tipHtml, { direction: 'top', offset: [0, -10], className: 'unidade-tooltip' });
                 }
+                if (isParada && !running) m.on('click', () => selecionarDestino(u.id));
                 m.addTo(unidadesLayer);
             });
             unidadesLayer.addTo(map);
@@ -1018,7 +1035,10 @@
         function ajustarZoomMapaComUnidades() {
             if (!map) return;
             const pts = [];
-            unidadesLista.forEach(u => pts.push([u.lat, u.lng]));
+            const selId = destinoSelecionado ? destinoSelecionado.id : null;
+            unidadesLista.forEach(u => {
+                if (deveExibirUnidadeNoMapa(u, selId)) pts.push([u.lat, u.lng]);
+            });
             if (path.length) path.forEach(p => pts.push(p));
             if (pts.length === 1) {
                 map.setView(pts[0], 16);
@@ -1068,7 +1088,9 @@
                 if (!destinoSelecionado) return alert('Selecione para onde você vai (ou "Outro lugar").');
                 try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
                 running = true;
+                ultimoSnapAoVivo = 0;
                 renderizarBarraEnderecos();
+                renderizarUnidadesNoMapa();
                 btn.innerText = "Finalizar";
                 btn.className = "btn-yellow stop";
                 mapFollowCar = true;
@@ -1112,9 +1134,13 @@
                     path.push(pos);
                     marker.setLatLng(pos);
                     polyline.addLatLng(pos);
-                    if (path.length === 2) atualizarLinhaSaidaDaBase();
+                    if (path.length === 2) {
+                        atualizarLinhaSaidaDaBase();
+                        renderizarUnidadesNoMapa();
+                    }
                     seguirCarro(pos);
                     atualizarKmDisplay();
+                    atualizarTrajetoAoVivoNasRuas();
                     db.ref('vehicles/' + carId + '/last_pos').set({
                         lat: pos[0], lng: pos[1], driver,
                         km_atual: (dist / 1000).toFixed(2),
@@ -1150,9 +1176,9 @@
             return result;
         }
 
-        async function snapToRoad(rawPath) {
+        async function snapToRoad(rawPath, maxPontos) {
             if (rawPath.length < 2) return rawPath;
-            const sampled = amostragemPath(rawPath, 50);
+            const sampled = amostragemPath(rawPath, maxPontos || 50);
             const coords = sampled.map(p => [p[1], p[0]]);
             try {
                 const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
@@ -1162,8 +1188,21 @@
                 });
                 if (!res.ok) return rawPath;
                 const data = await res.json();
+                if (!data.features || !data.features[0]) return rawPath;
                 return data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
             } catch (e) { return rawPath; }
+        }
+
+        async function atualizarTrajetoAoVivoNasRuas() {
+            if (!running || snapAoVivoEmCurso || path.length < SNAP_MIN_PONTOS) return;
+            if (Date.now() - ultimoSnapAoVivo < SNAP_AO_VIVO_MS) return;
+            snapAoVivoEmCurso = true;
+            try {
+                const snapped = await snapToRoad(path, 40);
+                if (polyline && snapped.length >= 2) polyline.setLatLngs(snapped);
+                ultimoSnapAoVivo = Date.now();
+            } catch (e) { /* mantém linha GPS */ }
+            finally { snapAoVivoEmCurso = false; }
         }
 
         async function fecharCorrida() {
