@@ -12,17 +12,7 @@ const LA_FIREBASE_CONFIG = {
     appId: "1:847252305513:web:d2caa9b0404806ea8794f8"
 };
 
-/**
- * Conta universal de teste (app + painel usam o mesmo login).
- * Firebase exige formato e-mail — não aceita só "admin"; use o valor abaixo no Console.
- * Cadastre admin@lacustom.test no Firebase Console (senha só no Console).
- */
-const LA_AUTH_EMAIL_TESTE = 'admin@lacustom.test';
-
-const LA_AUTH_EMAIL = {
-    motorista: LA_AUTH_EMAIL_TESTE,
-    painel: LA_AUTH_EMAIL_TESTE
-};
+/** E-mail e senha vêm da tela de login — cadastre usuários no Firebase Console. */
 
 if (!firebase.apps.length) {
     firebase.initializeApp(LA_FIREBASE_CONFIG);
