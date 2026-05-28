@@ -298,6 +298,10 @@
         #tela-mapa.corrida-ativa .corrida-status-banner {
             display: block;
         }
+        .corrida-status-banner.aviso-plano {
+            background: #fff3e0;
+            color: #bf360c;
+        }
         #tela-mapa #map { width: 100%; height: 100%; }
         .leaflet-container { background: var(--map-bg); font-family: inherit; }
         /* Barra vertical — endereços prontos */
@@ -920,6 +924,7 @@
         ];
 
         let idx = 0, driver = "", driverModoOutro = false, running = false, dist = 0, path = [], watch, map, marker, polyline, startTime, timer, wakeLock = null;
+        let lastGpsAt = 0, monitorSegundoPlanoOk = false;
         let currentOdoRef = null, checkInterval = null;
         let mapFollowCar = true;
         let unidadesLayer = null;
@@ -971,7 +976,61 @@
         }
 
         function verificarSessao() {
+            configurarMonitoramentoSegundoPlano();
             laObservarAuth(mostrarAppLogado, mostrarTelaLogin);
+        }
+
+        /**
+         * Celular bloqueado = navegador pausa GPS. Salvamos backup e retomamos ao desbloquear.
+         */
+        function configurarMonitoramentoSegundoPlano() {
+            if (monitorSegundoPlanoOk) return;
+            monitorSegundoPlanoOk = true;
+            document.addEventListener('visibilitychange', function () {
+                if (!running) return;
+                if (document.hidden) {
+                    salvarBackupViagem();
+                    atualizarBannerSegundoPlano(true);
+                } else {
+                    atualizarBannerSegundoPlano(false);
+                    reativarWakeLock();
+                    retomarGpsAposDesbloqueio();
+                }
+            });
+            window.addEventListener('pagehide', function () {
+                if (running) salvarBackupViagem();
+            });
+        }
+
+        function atualizarBannerSegundoPlano(emSegundoPlano) {
+            const b = document.getElementById('corrida-status-banner');
+            if (!b) return;
+            if (emSegundoPlano) {
+                b.classList.add('aviso-plano');
+                b.innerHTML = '<strong>Tela bloqueada</strong> — o GPS pode pausar. Ao desbloquear, aguarde o sinal. Km já rodados ficam salvos no aparelho.';
+            } else {
+                b.classList.remove('aviso-plano');
+                b.innerHTML = '<strong>Corrida ativa</strong> — deixe a tela ligada para melhor rastreio. Siga a linha verde e a azul.';
+            }
+        }
+
+        async function reativarWakeLock() {
+            if (!running || !('wakeLock' in navigator)) return;
+            try {
+                if (wakeLock) { try { wakeLock.release(); } catch (e) {} }
+                wakeLock = await navigator.wakeLock.request('screen');
+            } catch (e) { /* alguns celulares não permitem com tela apagada */ }
+        }
+
+        function retomarGpsAposDesbloqueio() {
+            if (!running) return;
+            const carId = fleet[idx].id;
+            iniciarWatchGps(carId);
+            if (lastGpsAt && Date.now() - lastGpsAt > 45000) {
+                atualizarGpsUi(99, 'warn');
+                const el = document.getElementById('gps-status');
+                if (el) el.textContent = 'Retomando GPS após tela bloqueada...';
+            }
         }
 
         async function logout() {
@@ -1539,6 +1598,7 @@
          * ainda não calcula distância, apenas fixa referência inicial.
          */
         function processarPrimeiroPontoGps(pos) {
+            lastGpsAt = Date.now();
             path.push(pos);
             polyline.addLatLng(pos);
             marker.setLatLng(pos);
@@ -1595,6 +1655,8 @@
 
             const aceito = processarPontoGpsContinuo(pos);
             if (!aceito) return;
+            lastGpsAt = Date.now();
+            salvarBackupViagem();
             publicarPosicaoAtualNoFirebase(carId, pos);
         }
 
@@ -1686,8 +1748,9 @@
             const ok = await garantirPermissaoLocalizacao(btn);
             if (!ok) return;
 
-            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+            await reativarWakeLock();
             running = true;
+            lastGpsAt = 0;
             ultimoSnapAoVivo = 0;
             path = [];
             dist = 0;
