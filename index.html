@@ -589,6 +589,33 @@
             color: #666;
         }
         .sheet-destino-atual b { color: var(--black); }
+        .sheet-motivo {
+            padding: 6px 0 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .sheet-motivo-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #666;
+        }
+        .sheet-select {
+            width: 100%;
+            border: 2px solid var(--gray-border);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            background: var(--white);
+            color: var(--black);
+            outline: none;
+        }
+        .sheet-select:focus { border-color: var(--yellow); }
+        .sheet-motivo-outro {
+            display: none;
+            margin: 0;
+            text-align: left;
+        }
         .sheet-navegar {
             display: none;
             flex-direction: column;
@@ -748,6 +775,25 @@
 
                 <div id="sheet-destino-atual" class="sheet-destino-atual">Destino: <b id="destino-label-sheet">—</b></div>
 
+                <div id="sheet-motivo" class="sheet-motivo">
+                    <label class="sheet-motivo-label" for="motivo-corrida-select">Motivo da corrida</label>
+                    <select id="motivo-corrida-select" class="sheet-select" onchange="onChangeMotivoCorrida()">
+                        <option value="">Selecione...</option>
+                        <option value="entrega">Entrega de material</option>
+                        <option value="retirada">Retirada de material</option>
+                        <option value="visita">Visita técnica/comercial</option>
+                        <option value="banco">Banco/cartório</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                    <input
+                        type="text"
+                        id="motivo-corrida-outro"
+                        class="input sheet-motivo-outro"
+                        maxlength="80"
+                        placeholder="Descreva o motivo da corrida"
+                    >
+                </div>
+
                 <div id="sheet-navegar" class="sheet-navegar">
                     <button type="button" class="btn-nav" onclick="abrirNavegacao('google')">Navegar no Google Maps</button>
                     <button type="button" class="btn-nav btn-nav-osm" onclick="abrirNavegacao('osm')">Alternativa: mapa aberto (OSM)</button>
@@ -905,7 +951,8 @@
             try {
                 const trip = {
                     car: data.car, driver: data.driver, km: data.km, time: data.time, date: data.date, path: data.path,
-                    destino: data.destino || '—', destinoId: data.destinoId || null
+                    destino: data.destino || '—', destinoId: data.destinoId || null,
+                    motivoCorrida: data.motivoCorrida || '—'
                 };
                 await db.ref('vehicles/' + data.carId + '/status').set("DISPONÍVEL");
                 await db.ref('vehicles/' + data.carId + '/odometer').transaction(c => (c || 0) + data.km);
@@ -924,8 +971,34 @@
                 date: new Date().toLocaleString('pt-BR'),
                 path, startTime,
                 destino: destinoSelecionado ? destinoSelecionado.nomeCurto || destinoSelecionado.nome : null,
-                destinoId: destinoSelecionado ? destinoSelecionado.id : null
+                destinoId: destinoSelecionado ? destinoSelecionado.id : null,
+                motivoCorrida: getMotivoCorridaResolvido()
             }));
+        }
+
+        /**
+         * Retorna o texto final do motivo, independente da forma de seleção:
+         * - motivo pré-definido (entrega, retirada, etc.)
+         * - motivo digitado quando "Outro" está selecionado
+         */
+        function getMotivoCorridaResolvido() {
+            const select = document.getElementById('motivo-corrida-select');
+            const outroInput = document.getElementById('motivo-corrida-outro');
+            if (!select) return '';
+            if (select.value === 'outro') {
+                return (outroInput ? outroInput.value.trim() : '');
+            }
+            const label = select.options[select.selectedIndex];
+            return label && label.value ? label.text : '';
+        }
+
+        function onChangeMotivoCorrida() {
+            const select = document.getElementById('motivo-corrida-select');
+            const outroInput = document.getElementById('motivo-corrida-outro');
+            if (!select || !outroInput) return;
+            const isOutro = select.value === 'outro';
+            outroInput.style.display = isOutro ? 'block' : 'none';
+            if (!isOutro) outroInput.value = '';
         }
 
         function formatarTempo(ms) {
@@ -1339,6 +1412,9 @@
             atualizarBarraViagem();
             atualizarLabelDestinoSheet();
             atualizarBotoesNavegacao();
+            const motivoSel = document.getElementById('motivo-corrida-select');
+            if (motivoSel && !running) motivoSel.value = '';
+            onChangeMotivoCorrida();
             if (destinoSelecionado) {
                 atualizarLinhaDestino();
                 ajustarZoomParaDestino();
@@ -1460,6 +1536,8 @@
 
             if (!running) {
                 if (!destinoSelecionado) return alert('Selecione um destino na barra (ou "Outros" para corrida livre).');
+                const motivoCorrida = getMotivoCorridaResolvido();
+                if (!motivoCorrida) return alert('Selecione o motivo da corrida.');
                 btn.disabled = true;
                 btn.innerText = 'Aguardando GPS...';
                 try {
@@ -1583,7 +1661,9 @@
                 date: new Date().toLocaleString('pt-BR'),
                 path: snappedPath,
                 destino: destinoSelecionado ? (destinoSelecionado.nomeCurto || destinoSelecionado.nome) : '—',
-                destinoId: destinoSelecionado ? destinoSelecionado.id : null
+                destinoId: destinoSelecionado ? destinoSelecionado.id : null,
+                // Campo didático da Fase 1: exemplo de ampliação do JSON salvo em trips.
+                motivoCorrida: getMotivoCorridaResolvido() || '—'
             };
             try {
                 await db.ref('vehicles/' + carId + '/status').set("DISPONÍVEL");
