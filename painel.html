@@ -3,86 +3,331 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>L.A. GESTÃO - TELEMETRIA CLOUD</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="theme-color" content="#1a1a1a">
+    <title>L.A. Controle — Painel</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="la-firebase.js"></script>
     <style>
-        :root { --orange: #f39c12; }
-        body { background: #000; font-family: -apple-system, sans-serif; color: white; }
-        .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; }
-        #mapa-modal { height: 400px; width: 100%; border-radius: 15px; border: 1px solid var(--orange); }
-        .modal-overlay { background: rgba(0,0,0,0.9); display: none; position: fixed; top:0; left:0; width:100%; height:100%; z-index: 100; align-items: center; justify-content: center; padding: 20px; }
-        .filtro-label { display: block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 4px; }
-        .filtro-input { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(243,156,18,0.35); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none; }
-        .filtro-input:focus { border-color: var(--orange); }
-        .btn-filtro { padding: 10px 16px; border-radius: 12px; font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; border: none; }
-        .btn-filtro-aplicar { background: var(--orange); color: #000; }
-        .btn-filtro-limpar { background: transparent; color: #aaa; border: 1px solid #444; }
+        :root {
+            --yellow: #F5C518;
+            --yellow-hover: #E5B800;
+            --black: #1a1a1a;
+            --white: #ffffff;
+            --gray-bg: #f5f5f5;
+            --gray-border: #e8e8e8;
+            --text-muted: #888;
+            --route-99: #276EF1;
+            --danger: #e74c3c;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            min-height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--gray-bg);
+            color: var(--black);
+        }
+        .painel-shell {
+            max-width: 520px;
+            margin: 0 auto;
+            min-height: 100dvh;
+            background: var(--white);
+            box-shadow: 0 0 24px rgba(0,0,0,0.06);
+        }
+
+        /* —— Login (igual app motorista) —— */
+        #painel-login {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100dvh;
+            padding: 24px 20px;
+            background: var(--gray-bg);
+        }
+        .login-wrap { width: 100%; max-width: 360px; text-align: center; }
+        .login-logo { height: 56px; margin-bottom: 16px; }
+        .login-sub {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        .login-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+            text-align: left;
+        }
+        .field-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+        }
+        .input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--gray-border);
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 14px;
+            outline: none;
+            background: var(--white);
+            color: var(--black);
+        }
+        .input:focus { border-color: var(--yellow); }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .btn-yellow {
+            background: var(--yellow);
+            color: var(--black);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .btn-yellow:active { background: var(--yellow-hover); }
+
+        /* —— Painel logado —— */
+        #painel-content { display: none; flex-direction: column; min-height: 100dvh; }
+        .top-bar {
+            background: var(--black);
+            color: var(--white);
+            padding: calc(14px + var(--safe-top)) 16px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .top-bar h1 { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+        .top-bar .sub { font-size: 0.7rem; opacity: 0.75; font-weight: 400; margin-top: 2px; }
+        .top-logo { height: 36px; display: block; margin-bottom: 4px; }
+        .top-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .btn-top {
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: var(--white);
+        }
+        .btn-top-danger { border-color: rgba(231,76,60,0.5); color: #ffb4a8; }
+
+        .main-painel {
+            flex: 1;
+            padding: 16px 16px calc(20px + var(--safe-bottom));
+            background: var(--gray-bg);
+        }
+        .section-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            padding-left: 4px;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            border: 1px solid var(--gray-border);
+            margin-bottom: 12px;
+        }
+        .card-filtros-title {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--black);
+            margin-bottom: 12px;
+            letter-spacing: 0.05em;
+        }
+        .filtro-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 400px) { .filtro-grid { grid-template-columns: 1fr; } }
+        .filtro-label {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .filtro-input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 2px solid var(--gray-border);
+            background: var(--white);
+            color: var(--black);
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .filtro-input:focus { border-color: var(--yellow); }
+        .filtro-btns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .btn-filtro {
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-filtro-aplicar { background: var(--yellow); color: var(--black); }
+        .btn-filtro-limpar {
+            background: var(--white);
+            color: var(--text-muted);
+            border: 2px solid var(--gray-border);
+        }
+
+        .lista-viagens { display: flex; flex-direction: column; gap: 10px; }
+        .trip-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--gray-border);
+            border-left: 4px solid var(--yellow);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .trip-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .trip-car { font-size: 1.05rem; font-weight: 800; color: var(--black); }
+        .trip-driver { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
+        .trip-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+        .trip-meta b { color: var(--black); font-weight: 600; }
+        .trip-km { font-size: 1.1rem; font-weight: 800; color: var(--black); white-space: nowrap; }
+        .btn-ver-rota {
+            margin-top: 8px;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            background: var(--yellow);
+            color: var(--black);
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .empty-msg {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 32px 16px;
+            font-size: 0.9rem;
+        }
+
+        /* —— Modal mapa —— */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .modal-box {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow: auto;
+        }
+        .modal-close {
+            float: right;
+            border: none;
+            background: none;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            cursor: pointer;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .modal-titulo {
+            font-size: 0.9rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--black);
+            margin-bottom: 12px;
+            clear: both;
+        }
+        #mapa-modal {
+            height: 360px;
+            width: 100%;
+            border-radius: 12px;
+            border: 2px solid var(--gray-border);
+        }
     </style>
 </head>
-<body class="min-h-screen">
+<body>
 
-    <!-- TELA DE LOGIN -->
-    <div id="painel-login" class="flex items-center justify-center min-h-screen p-4">
-        <div class="text-center w-full max-w-xs">
-            <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="h-16 mx-auto mb-6" style="filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4));">
-            <h2 class="text-[--orange] text-sm font-black uppercase tracking-wider mb-6">Painel de Gestão</h2>
-            <label class="block text-left text-zinc-500 text-[10px] font-bold uppercase mb-1 ml-1">E-mail</label>
-            <input type="email" id="email-painel" placeholder="seu@email.com" autocomplete="username"
-                onkeypress="if(event.key==='Enter') loginPainel()"
-                class="w-full p-4 rounded-xl border border-[--orange] bg-white/5 text-white text-lg mb-3 outline-none">
-            <label class="block text-left text-zinc-500 text-[10px] font-bold uppercase mb-1 ml-1">Senha</label>
-            <input type="password" id="senha-painel" placeholder="Senha" autocomplete="current-password" onkeypress="if(event.key==='Enter') loginPainel()"
-                class="w-full p-4 rounded-xl border border-[--orange] bg-white/5 text-white text-lg mb-4 outline-none">
-            <button type="button" id="btn-login-painel" onclick="loginPainel()" class="w-full p-4 rounded-full border-2 border-[--orange] text-[--orange] font-bold uppercase tracking-wider hover:bg-[--orange] hover:text-black transition-all">Acessar</button>
-        </div>
-    </div>
-
-    <!-- CONTEÚDO DO PAINEL -->
-    <div id="painel-content" class="p-4" style="display: none;">
-
-        <!-- Modal do Mapa -->
-        <div id="overlay" class="modal-overlay">
-            <div class="w-full max-w-2xl bg-zinc-900 p-6 rounded-3xl relative">
-                <button onclick="fecharMapa()" class="absolute -top-10 right-0 text-white font-bold uppercase text-xs">Fechar [X]</button>
-                <h3 id="modal-titulo" class="text-[--orange] font-black uppercase mb-4 italic">Trajeto da Viagem</h3>
-                <div id="mapa-modal"></div>
+    <div class="painel-shell">
+        <!-- LOGIN -->
+        <div id="painel-login">
+            <div class="login-wrap">
+                <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="login-logo" alt="L.A.">
+                <p class="login-sub">Painel de gestão — telemetria</p>
+                <div class="login-card">
+                    <label class="field-label" for="email-painel">E-mail</label>
+                    <input type="email" id="email-painel" class="input" placeholder="seu@email.com" autocomplete="username"
+                        onkeypress="if(event.key==='Enter') loginPainel()">
+                    <label class="field-label" for="senha-painel">Senha</label>
+                    <input type="password" id="senha-painel" class="input" placeholder="Senha" autocomplete="current-password"
+                        onkeypress="if(event.key==='Enter') loginPainel()">
+                    <button type="button" id="btn-login-painel" class="btn btn-yellow" onclick="loginPainel()">Entrar</button>
+                </div>
             </div>
         </div>
 
-        <header class="max-w-5xl mx-auto mb-8 flex justify-between items-center border-b border-white/10 pb-6">
-            <div>
-                <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="h-10 mb-2">
-                <h1 class="text-[--orange] font-black text-sm uppercase tracking-tighter italic">Gestão de Telemetria</h1>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="window.location.reload()" class="bg-zinc-900 border border-white/10 px-4 py-2 rounded-xl text-xs font-bold">F5</button>
-                <button onclick="logoutPainel()" class="bg-zinc-900 border border-red-500/30 text-red-400 px-4 py-2 rounded-xl text-xs font-bold">Sair</button>
-            </div>
-        </header>
+        <!-- PAINEL -->
+        <div id="painel-content">
+            <header class="top-bar">
+                <div>
+                    <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="top-logo" alt="L.A.">
+                    <h1>L.A. Controle</h1>
+                    <div class="sub">Gestão de telemetria</div>
+                </div>
+                <div class="top-actions">
+                    <button type="button" class="btn-top" onclick="window.location.reload()">Atualizar</button>
+                    <button type="button" class="btn-top btn-top-danger" onclick="logoutPainel()">Sair</button>
+                </div>
+            </header>
 
-        <main class="max-w-3xl mx-auto space-y-6">
-            <section>
-                <h2 class="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-4 ml-2">Histórico de Movimentação</h2>
+            <main class="main-painel">
+                <p class="section-title">Histórico de movimentação</p>
 
-                <div class="card mb-4 space-y-3">
-                    <div class="text-[--orange] text-[10px] font-black uppercase tracking-wider">Filtros</div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="card">
+                    <div class="card-filtros-title">Filtros</div>
+                    <div class="filtro-grid">
                         <div>
                             <label class="filtro-label" for="filtro-motorista">Motorista</label>
-                            <select id="filtro-motorista" class="filtro-input">
-                                <option value="todos">Todos</option>
-                            </select>
+                            <select id="filtro-motorista" class="filtro-input"><option value="todos">Todos</option></select>
                         </div>
                         <div>
                             <label class="filtro-label" for="filtro-destino">Destino</label>
-                            <select id="filtro-destino" class="filtro-input">
-                                <option value="todos">Todos</option>
-                            </select>
+                            <select id="filtro-destino" class="filtro-input"><option value="todos">Todos</option></select>
                         </div>
                         <div>
                             <label class="filtro-label" for="filtro-data-inicio">Data início</label>
@@ -93,15 +338,23 @@
                             <input type="date" id="filtro-data-fim" class="filtro-input">
                         </div>
                     </div>
-                    <div class="flex gap-2 flex-wrap">
+                    <div class="filtro-btns">
                         <button type="button" class="btn-filtro btn-filtro-aplicar" onclick="aplicarFiltros()">Filtrar</button>
                         <button type="button" class="btn-filtro btn-filtro-limpar" onclick="limparFiltros()">Limpar</button>
                     </div>
                 </div>
 
-                <div id="lista-viagens" class="space-y-3"></div>
-            </section>
-        </main>
+                <div id="lista-viagens" class="lista-viagens"></div>
+            </main>
+        </div>
+    </div>
+
+    <div id="overlay" class="modal-overlay">
+        <div class="modal-box">
+            <button type="button" class="modal-close" onclick="fecharMapa()">Fechar ✕</button>
+            <h3 id="modal-titulo" class="modal-titulo">Trajeto da viagem</h3>
+            <div id="mapa-modal"></div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -116,7 +369,8 @@
 
         function mostrarPainelLogado() {
             document.getElementById('painel-login').style.display = 'none';
-            document.getElementById('painel-content').style.display = 'block';
+            const content = document.getElementById('painel-content');
+            content.style.display = 'flex';
             iniciarEscutaTrips();
         }
 
@@ -142,7 +396,7 @@
                 alert(laMensagemErroAuth(err));
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Acessar';
+                btn.textContent = 'Entrar';
             }
         }
 
@@ -158,9 +412,7 @@
             return d.innerHTML;
         }
 
-        function normalizarTexto(s) {
-            return (s || '').trim().toLowerCase();
-        }
+        function normalizarTexto(s) { return (s || '').trim().toLowerCase(); }
 
         function parseTripDate(str) {
             if (!str) return null;
@@ -252,7 +504,7 @@
                 .reverse();
 
             if (!entries.length) {
-                container.innerHTML = '<p class="text-zinc-500 text-sm text-center py-8">Nenhuma viagem neste filtro.</p>';
+                container.innerHTML = '<p class="empty-msg">Nenhuma viagem neste filtro.</p>';
                 return;
             }
 
@@ -267,18 +519,18 @@
                 const destinoTxt = esc(trip.destino || '—');
 
                 container.innerHTML += `
-                    <div class="card border-l-2 border-l-zinc-700 hover:border-l-[--orange] transition-all">
-                        <div class="flex justify-between items-center">
+                    <div class="trip-card">
+                        <div class="trip-row">
                             <div>
-                                <div class="text-[#f39c12] font-black text-lg">${carName}</div>
-                                <div class="text-white font-bold text-sm uppercase">${driverName}</div>
-                                <div class="text-zinc-400 text-[11px] mt-1">Destino: <span class="text-white">${destinoTxt}</span></div>
-                                <div class="text-zinc-300 text-[11px] mt-1">Motivo: <span class="text-white">${motivoCorrida}</span></div>
-                                <div class="text-zinc-500 text-[10px] mt-1">${date}</div>
+                                <div class="trip-car">${carName}</div>
+                                <div class="trip-driver">${driverName}</div>
+                                <div class="trip-meta">Destino: <b>${destinoTxt}</b></div>
+                                <div class="trip-meta">Motivo: <b>${motivoCorrida}</b></div>
+                                <div class="trip-meta">${date}</div>
                             </div>
-                            <div class="text-right flex flex-col items-end gap-2">
-                                <div class="text-white font-black text-lg">+${km} KM</div>
-                                <button type="button" onclick="abrirMapaPorId('${id}')" class="bg-[--orange] text-black text-[10px] font-black px-3 py-1 rounded uppercase">Ver Rota</button>
+                            <div style="text-align:right">
+                                <div class="trip-km">+${km} km</div>
+                                <button type="button" class="btn-ver-rota" onclick="abrirMapaPorId('${id}')">Ver rota</button>
                             </div>
                         </div>
                     </div>`;
@@ -333,20 +585,20 @@
 
         function abrirMapa(path, car) {
             document.getElementById('overlay').style.display = 'flex';
-            document.getElementById('modal-titulo').innerText = `Rota: ${car}`;
+            document.getElementById('modal-titulo').innerText = 'Rota: ' + car;
 
             if (!map) {
                 map = L.map('mapa-modal', { zoomControl: false }).setView([-23.55, -46.63], 13);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
             }
 
             if (polyline) map.removeLayer(polyline);
 
             if (path && path.length > 0) {
-                polyline = L.polyline(path, {color: '#f39c12', weight: 4}).addTo(map);
-                map.fitBounds(polyline.getBounds());
+                polyline = L.polyline(path, { color: '#276EF1', weight: 5 }).addTo(map);
+                map.fitBounds(polyline.getBounds(), { padding: [24, 24] });
             }
-            
+
             setTimeout(() => map.invalidateSize(), 300);
         }
 
