@@ -260,6 +260,7 @@
             max-width: none;
             background: var(--sheet);
             flex-direction: column;
+            overflow: hidden;
         }
         .map-area-99 {
             flex: 1;
@@ -269,13 +270,19 @@
             transition: min-height 0.35s ease;
         }
         #tela-mapa.corrida-ativa .map-area-99 {
-            min-height: 58vh;
+            flex: 1 1 auto;
+            min-height: 32vh;
+            max-height: 46vh;
         }
         #tela-mapa.corrida-ativa .bottom-sheet {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none;
             box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
         }
         #tela-mapa.corrida-ativa .sheet-navegar,
-        #tela-mapa.corrida-ativa #sheet-destino-atual {
+        #tela-mapa.corrida-ativa #sheet-destino-atual,
+        #tela-mapa.corrida-ativa #sheet-motivo {
             display: none !important;
         }
         .corrida-status-banner {
@@ -426,13 +433,23 @@
         }
         .bottom-sheet {
             flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
             background: var(--sheet);
             border-radius: 20px 20px 0 0;
             box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
-            padding: 8px 16px calc(12px + var(--safe-bottom));
-            max-height: 48vh;
+            padding: 8px 16px calc(8px + var(--safe-bottom));
+            max-height: 52vh;
+            overflow: hidden;
+        }
+        .sheet-scroll {
+            flex: 1 1 auto;
+            min-height: 0;
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
         }
         .sheet-handle {
             width: 40px;
@@ -495,15 +512,19 @@
         .gps-dot.bad { background: var(--danger); }
         .gps-dot.wait { background: #bbb; }
         .sheet-cta {
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 14px;
-            padding: 14px 0 8px;
-            position: sticky;
-            bottom: 0;
+            padding: 12px 0 4px;
+            margin-top: 4px;
+            border-top: 1px solid #eee;
             background: var(--sheet);
-            z-index: 5;
+        }
+        #tela-mapa.corrida-ativa .sheet-cta {
+            padding-bottom: calc(8px + var(--safe-bottom));
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.08);
         }
         .sheet-km-block { flex-shrink: 0; }
         .sheet-km-big {
@@ -765,6 +786,7 @@
             <div class="bottom-sheet">
                 <div class="sheet-handle"></div>
 
+                <div class="sheet-scroll">
                 <div class="sheet-row">
                     <img id="sheet-car-img" class="sheet-car-thumb" src="" alt="">
                     <div class="sheet-trip-info">
@@ -819,6 +841,7 @@
                 </div>
 
                 <button type="button" id="btn-ja-saindo" class="btn-ja-saindo" onclick="jaEstouSaindo()">Já estou saindo</button>
+                </div>
 
                 <div class="sheet-cta">
                     <div class="sheet-km-block">
