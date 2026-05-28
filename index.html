@@ -862,7 +862,10 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+        if ('serviceWorker' in navigator) {
+            const appNativo = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+            if (!appNativo) navigator.serviceWorker.register('sw.js');
+        }
 
         const ROUTE_COLOR = '#276EF1';
         const db = laDb();
