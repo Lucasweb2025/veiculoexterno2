@@ -25,8 +25,13 @@
         <div class="text-center w-full max-w-xs">
             <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="h-16 mx-auto mb-6" style="filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4));">
             <h2 class="text-[--orange] text-sm font-black uppercase tracking-wider mb-6">Painel de Gestão</h2>
-            <input type="password" id="senha-painel" placeholder="Senha" onkeypress="if(event.key==='Enter') loginPainel()"
-                class="w-full p-4 rounded-xl border border-[--orange] bg-white/5 text-white text-center text-lg mb-4 outline-none">
+            <label class="block text-left text-zinc-500 text-[10px] font-bold uppercase mb-1 ml-1">E-mail</label>
+            <input type="email" id="email-painel" placeholder="seu@email.com" autocomplete="username" value="admin@lacustom.test"
+                onkeypress="if(event.key==='Enter') loginPainel()"
+                class="w-full p-4 rounded-xl border border-[--orange] bg-white/5 text-white text-lg mb-3 outline-none">
+            <label class="block text-left text-zinc-500 text-[10px] font-bold uppercase mb-1 ml-1">Senha</label>
+            <input type="password" id="senha-painel" placeholder="Senha" autocomplete="current-password" onkeypress="if(event.key==='Enter') loginPainel()"
+                class="w-full p-4 rounded-xl border border-[--orange] bg-white/5 text-white text-lg mb-4 outline-none">
             <button type="button" id="btn-login-painel" onclick="loginPainel()" class="w-full p-4 rounded-full border-2 border-[--orange] text-[--orange] font-bold uppercase tracking-wider hover:bg-[--orange] hover:text-black transition-all">Acessar</button>
         </div>
     </div>
@@ -85,13 +90,14 @@
         laObservarAuth(mostrarPainelLogado, mostrarPainelLogin);
 
         async function loginPainel() {
+            const email = document.getElementById('email-painel').value;
             const senha = document.getElementById('senha-painel').value;
             const btn = document.getElementById('btn-login-painel');
-            if (!senha) return alert('Digite a senha.');
+            if (!email.trim() || !senha) return alert('Preencha e-mail e senha.');
             btn.disabled = true;
             btn.textContent = 'Entrando...';
             try {
-                await laEntrar('painel', senha);
+                await laEntrar(email, senha);
                 document.getElementById('senha-painel').value = '';
             } catch (err) {
                 alert(laMensagemErroAuth(err));

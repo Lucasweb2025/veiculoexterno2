@@ -44,15 +44,22 @@ function laMensagemErroAuth(err) {
         'auth/user-disabled': 'Usuário desativado no Firebase.',
         'auth/user-not-found': 'Usuário não cadastrado. Veja FASE-3-ESTUDO.md (passo 1).',
         'auth/too-many-requests': 'Muitas tentativas. Aguarde alguns minutos.',
-        'auth/network-request-failed': 'Sem internet para validar o login.'
+        'auth/network-request-failed': 'Sem internet para validar o login.',
+        'auth/missing-fields': 'Preencha e-mail e senha.',
+        'auth/invalid-credential': 'E-mail ou senha incorretos.'
     };
     return map[code] || 'Não foi possível entrar. Confira usuário no Firebase e tente de novo.';
 }
 
-async function laEntrar(perfil, senha) {
-    const email = LA_AUTH_EMAIL[perfil];
-    if (!email) throw new Error('perfil_invalido');
-    return laAuth().signInWithEmailAndPassword(email, senha);
+/** Login com e-mail e senha digitados na tela (Firebase Authentication). */
+async function laEntrar(email, senha) {
+    const e = (email || '').trim();
+    if (!e || !senha) {
+        const err = new Error('missing');
+        err.code = 'auth/missing-fields';
+        throw err;
+    }
+    return laAuth().signInWithEmailAndPassword(e, senha);
 }
 
 async function laSair() {

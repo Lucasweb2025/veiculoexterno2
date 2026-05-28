@@ -101,6 +101,16 @@
             box-shadow: 0 2px 16px rgba(0,0,0,0.06);
         }
         .logo-center { height: 56px; margin-bottom: 20px; }
+        .login-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+            text-align: left;
+        }
         .input {
             width: 100%;
             padding: 14px 16px;
@@ -669,8 +679,13 @@
         <div class="body-light">
             <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo-center" alt="L.A. Custom">
             <div class="card">
-                <p style="text-align:center;color:var(--text-muted);margin-bottom:16px;font-size:0.9rem;">Acesso ao sistema de frota</p>
-                <input type="password" id="senha-acesso" class="input" placeholder="Senha" onkeypress="if(event.key==='Enter') validarLogin()">
+                <p style="text-align:center;color:var(--text-muted);margin-bottom:16px;font-size:0.9rem;">Entre com sua conta Firebase</p>
+                <label class="login-label" for="email-acesso">E-mail</label>
+                <input type="email" id="email-acesso" class="input" placeholder="seu@email.com" autocomplete="username"
+                    value="admin@lacustom.test" onkeypress="if(event.key==='Enter') validarLogin()">
+                <label class="login-label" for="senha-acesso">Senha</label>
+                <input type="password" id="senha-acesso" class="input" placeholder="Senha" autocomplete="current-password"
+                    onkeypress="if(event.key==='Enter') validarLogin()">
                 <button type="button" class="btn btn-yellow" id="btn-login" onclick="validarLogin()">Entrar</button>
             </div>
         </div>
@@ -915,13 +930,14 @@
         }
 
         async function validarLogin() {
+            const email = document.getElementById('email-acesso').value;
             const senha = document.getElementById('senha-acesso').value;
             const btn = document.getElementById('btn-login');
-            if (!senha) return alert('Digite a senha.');
+            if (!email.trim() || !senha) return alert('Preencha e-mail e senha.');
             btn.disabled = true;
             btn.innerText = 'Entrando...';
             try {
-                await laEntrar('motorista', senha);
+                await laEntrar(email, senha);
                 document.getElementById('senha-acesso').value = '';
             } catch (err) {
                 alert(laMensagemErroAuth(err));
