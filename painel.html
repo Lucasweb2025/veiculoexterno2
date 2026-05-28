@@ -16,6 +16,12 @@
         .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; }
         #mapa-modal { height: 400px; width: 100%; border-radius: 15px; border: 1px solid var(--orange); }
         .modal-overlay { background: rgba(0,0,0,0.9); display: none; position: fixed; top:0; left:0; width:100%; height:100%; z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        .filtro-label { display: block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 4px; }
+        .filtro-input { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(243,156,18,0.35); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none; }
+        .filtro-input:focus { border-color: var(--orange); }
+        .btn-filtro { padding: 10px 16px; border-radius: 12px; font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; border: none; }
+        .btn-filtro-aplicar { background: var(--orange); color: #000; }
+        .btn-filtro-limpar { background: transparent; color: #aaa; border: 1px solid #444; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -62,6 +68,37 @@
         <main class="max-w-3xl mx-auto space-y-6">
             <section>
                 <h2 class="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-4 ml-2">Histórico de Movimentação</h2>
+
+                <div class="card mb-4 space-y-3">
+                    <div class="text-[--orange] text-[10px] font-black uppercase tracking-wider">Filtros</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="filtro-label" for="filtro-motorista">Motorista</label>
+                            <select id="filtro-motorista" class="filtro-input">
+                                <option value="todos">Todos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="filtro-label" for="filtro-destino">Destino</label>
+                            <select id="filtro-destino" class="filtro-input">
+                                <option value="todos">Todos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="filtro-label" for="filtro-data-inicio">Data início</label>
+                            <input type="date" id="filtro-data-inicio" class="filtro-input">
+                        </div>
+                        <div>
+                            <label class="filtro-label" for="filtro-data-fim">Data fim</label>
+                            <input type="date" id="filtro-data-fim" class="filtro-input">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <button type="button" class="btn-filtro btn-filtro-aplicar" onclick="aplicarFiltros()">Filtrar</button>
+                        <button type="button" class="btn-filtro btn-filtro-limpar" onclick="limparFiltros()">Limpar</button>
+                    </div>
+                </div>
+
                 <div id="lista-viagens" class="space-y-3"></div>
             </section>
         </main>
@@ -74,6 +111,8 @@
         const tripCache = {};
         const tripNames = {};
         let handlerTrips = null;
+        let tripsAll = {};
+        let filtrosAtivos = { motorista: 'todos', destino: 'todos', dataInicio: '', dataFim: '' };
 
         function mostrarPainelLogado() {
             document.getElementById('painel-login').style.display = 'none';
@@ -119,40 +158,165 @@
             return d.innerHTML;
         }
 
-        function iniciarEscutaTrips() {
-            if (handlerTrips) return;
-            handlerTrips = function (snapshot) {
-                const data = snapshot.val();
-                const container = document.getElementById('lista-viagens');
-                container.innerHTML = "";
+        function normalizarTexto(s) {
+            return (s || '').trim().toLowerCase();
+        }
 
-                if (!data) return;
+        function parseTripDate(str) {
+            if (!str) return null;
+            const parte = String(str).split(',')[0].trim();
+            const p = parte.split('/');
+            if (p.length !== 3) return null;
+            const d = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1, y = parseInt(p[2], 10);
+            if (!d || m < 0 || !y) return null;
+            return new Date(y, m, d);
+        }
 
-                Object.entries(data).reverse().forEach(([id, trip]) => {
-                    tripCache[id] = trip.path || [];
-                    tripNames[id] = trip.car || '---';
-                    const carName = esc(trip.car);
-                    const driverName = esc(trip.driver);
-                    const date = esc(trip.date);
-                    const km = parseFloat(trip.km || 0).toFixed(2);
-                    const motivoCorrida = esc(trip.motivoCorrida || '—');
+        function parseInputDate(val) {
+            if (!val) return null;
+            const p = val.split('-').map(Number);
+            if (p.length !== 3) return null;
+            return new Date(p[0], p[1] - 1, p[2]);
+        }
 
-                    container.innerHTML += `
+        function diaMs(date) {
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+        }
+
+        function tripNoPeriodo(trip, inicio, fim) {
+            const td = parseTripDate(trip.date);
+            if (!inicio && !fim) return true;
+            if (!td) return false;
+            const t = diaMs(td);
+            if (inicio && fim) return t >= diaMs(inicio) && t <= diaMs(fim);
+            if (inicio) return t === diaMs(inicio);
+            if (fim) return t <= diaMs(fim);
+            return true;
+        }
+
+        function matchMotorista(trip, filtro) {
+            if (!filtro || filtro === 'todos') return true;
+            return normalizarTexto(trip.driver) === normalizarTexto(filtro);
+        }
+
+        function matchDestino(trip, filtro) {
+            if (!filtro || filtro === 'todos') return true;
+            const f = normalizarTexto(filtro);
+            const dest = normalizarTexto(trip.destino);
+            const id = normalizarTexto(trip.destinoId);
+            return dest === f || id === f || dest.includes(f);
+        }
+
+        function tripPassaFiltro(trip) {
+            const inicio = parseInputDate(filtrosAtivos.dataInicio);
+            const fim = parseInputDate(filtrosAtivos.dataFim);
+            return matchMotorista(trip, filtrosAtivos.motorista)
+                && matchDestino(trip, filtrosAtivos.destino)
+                && tripNoPeriodo(trip, inicio, fim);
+        }
+
+        function preencherSelect(id, valores, valorAtual) {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            const atual = valorAtual || sel.value || 'todos';
+            sel.innerHTML = '<option value="todos">Todos</option>';
+            valores.sort((a, b) => a.localeCompare(b, 'pt-BR')).forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                sel.appendChild(opt);
+            });
+            if (atual !== 'todos' && valores.some(v => normalizarTexto(v) === normalizarTexto(atual))) {
+                sel.value = valores.find(v => normalizarTexto(v) === normalizarTexto(atual)) || 'todos';
+            } else {
+                sel.value = 'todos';
+            }
+        }
+
+        function atualizarOpcoesFiltro() {
+            const motoristas = new Set();
+            const destinos = new Set();
+            Object.values(tripsAll).forEach(trip => {
+                if (trip.driver) motoristas.add(String(trip.driver).trim());
+                if (trip.destino) destinos.add(String(trip.destino).trim());
+            });
+            preencherSelect('filtro-motorista', [...motoristas], filtrosAtivos.motorista);
+            preencherSelect('filtro-destino', [...destinos], filtrosAtivos.destino);
+        }
+
+        function renderizarListaViagens() {
+            const container = document.getElementById('lista-viagens');
+            container.innerHTML = '';
+            const entries = Object.entries(tripsAll)
+                .filter(([, trip]) => tripPassaFiltro(trip))
+                .reverse();
+
+            if (!entries.length) {
+                container.innerHTML = '<p class="text-zinc-500 text-sm text-center py-8">Nenhuma viagem neste filtro.</p>';
+                return;
+            }
+
+            entries.forEach(([id, trip]) => {
+                tripCache[id] = trip.path || [];
+                tripNames[id] = trip.car || '---';
+                const carName = esc(trip.car);
+                const driverName = esc(trip.driver);
+                const date = esc(trip.date);
+                const km = parseFloat(trip.km || 0).toFixed(2);
+                const motivoCorrida = esc(trip.motivoCorrida || '—');
+                const destinoTxt = esc(trip.destino || '—');
+
+                container.innerHTML += `
                     <div class="card border-l-2 border-l-zinc-700 hover:border-l-[--orange] transition-all">
                         <div class="flex justify-between items-center">
                             <div>
                                 <div class="text-[#f39c12] font-black text-lg">${carName}</div>
                                 <div class="text-white font-bold text-sm uppercase">${driverName}</div>
+                                <div class="text-zinc-400 text-[11px] mt-1">Destino: <span class="text-white">${destinoTxt}</span></div>
                                 <div class="text-zinc-300 text-[11px] mt-1">Motivo: <span class="text-white">${motivoCorrida}</span></div>
                                 <div class="text-zinc-500 text-[10px] mt-1">${date}</div>
                             </div>
                             <div class="text-right flex flex-col items-end gap-2">
                                 <div class="text-white font-black text-lg">+${km} KM</div>
-                                <button onclick="abrirMapaPorId('${id}')" class="bg-[--orange] text-black text-[10px] font-black px-3 py-1 rounded uppercase">Ver Rota</button>
+                                <button type="button" onclick="abrirMapaPorId('${id}')" class="bg-[--orange] text-black text-[10px] font-black px-3 py-1 rounded uppercase">Ver Rota</button>
                             </div>
                         </div>
                     </div>`;
-                });
+            });
+        }
+
+        function aplicarFiltros() {
+            const dataInicio = document.getElementById('filtro-data-inicio').value;
+            const dataFim = document.getElementById('filtro-data-fim').value;
+            const inicio = parseInputDate(dataInicio);
+            const fim = parseInputDate(dataFim);
+            if (inicio && fim && diaMs(fim) < diaMs(inicio)) {
+                return alert('Data fim não pode ser antes da data início.');
+            }
+            filtrosAtivos = {
+                motorista: document.getElementById('filtro-motorista').value,
+                destino: document.getElementById('filtro-destino').value,
+                dataInicio,
+                dataFim
+            };
+            renderizarListaViagens();
+        }
+
+        function limparFiltros() {
+            document.getElementById('filtro-motorista').value = 'todos';
+            document.getElementById('filtro-destino').value = 'todos';
+            document.getElementById('filtro-data-inicio').value = '';
+            document.getElementById('filtro-data-fim').value = '';
+            filtrosAtivos = { motorista: 'todos', destino: 'todos', dataInicio: '', dataFim: '' };
+            renderizarListaViagens();
+        }
+
+        function iniciarEscutaTrips() {
+            if (handlerTrips) return;
+            handlerTrips = function (snapshot) {
+                tripsAll = snapshot.val() || {};
+                atualizarOpcoesFiltro();
+                renderizarListaViagens();
             };
             db.ref('trips').on('value', handlerTrips);
         }
