@@ -1,7 +1,9 @@
-const CACHE_NAME = 'la-controle-v60';
+const CACHE_NAME = 'la-controle-v64';
 const ASSETS = [
   './',
   './index.html',
+  './painel.html',
+  './la-firebase.js',
   './manifest.json',
   'https://unpkg.com/leaflet/dist/leaflet.css',
   'https://unpkg.com/leaflet/dist/leaflet.js',

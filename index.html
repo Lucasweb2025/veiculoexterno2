@@ -12,6 +12,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="la-firebase.js"></script>
+    <script src="la-config.js"></script>
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <style>
         :root {
@@ -667,8 +670,8 @@
             <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="logo-center" alt="L.A. Custom">
             <div class="card">
                 <p style="text-align:center;color:var(--text-muted);margin-bottom:16px;font-size:0.9rem;">Acesso ao sistema de frota</p>
-                <input type="password" id="senha-acesso" class="input" placeholder="Senha de acesso" onkeypress="if(event.key==='Enter') validarLogin()">
-                <button class="btn btn-yellow" onclick="validarLogin()">Entrar</button>
+                <input type="password" id="senha-acesso" class="input" placeholder="Senha" onkeypress="if(event.key==='Enter') validarLogin()">
+                <button type="button" class="btn btn-yellow" id="btn-login" onclick="validarLogin()">Entrar</button>
             </div>
         </div>
     </div>
@@ -820,21 +823,11 @@
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
         const ROUTE_COLOR = '#276EF1';
-        const firebaseConfig = {
-            apiKey: "AIzaSyB4wDK8VddBeOOrfndLd7LemSGDPupKjF0",
-            authDomain: "la-controle.firebaseapp.com",
-            databaseURL: "https://la-controle-default-rtdb.firebaseio.com",
-            projectId: "la-controle",
-            storageBucket: "la-controle.firebasestorage.app",
-            messagingSenderId: "847252305513",
-            appId: "1:847252305513:web:d2caa9b0404806ea8794f8"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        const SENHA_MESTRA = "LACUSTOM2026";
+        const db = laDb();
         const TRIP_BACKUP_KEY = 'la_trip_backup_v34';
-        const ORS_KEY = "5b3ce3597851110001cf6248f29a41aab5a84830a5a434027bbfeba8";
+        /** Chave ORS em la-config.js (gitignore) — não commitar no GitHub. */
+        const ORS_KEY = (window.LA_CONFIG && window.LA_CONFIG.ORS_KEY) || '';
+        const ORS_DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
         /** Google Maps embutido: precisa chave + faturamento Google Cloud (não é 100% grátis). Deixe vazio = mapa L.A. + rotas grátis (ORS). */
         const GOOGLE_MAPS_JS_KEY = '';
         const GPS_ACCURACY_LIMIT = 60;
@@ -908,31 +901,44 @@
             if (el) el.classList.add('active');
         }
 
-        function validarLogin() {
-            if (document.getElementById('senha-acesso').value.trim().toUpperCase() === SENHA_MESTRA) {
-                localStorage.setItem('sessao_la_cloud', 'ativa');
-                document.getElementById('tela-login').classList.remove('active');
-                document.getElementById('app-content').style.display = 'block';
-                showScreen('tela-motorista');
-                mudar(0);
-                verificarViagemPendente();
-            } else { alert("Senha incorreta!"); }
+        function mostrarAppLogado() {
+            document.getElementById('tela-login').classList.remove('active');
+            document.getElementById('app-content').style.display = 'block';
+            showScreen('tela-motorista');
+            mudar(0);
+            verificarViagemPendente();
         }
 
-        function verificarSessao() {
-            if (localStorage.getItem('sessao_la_cloud') === 'ativa') {
-                document.getElementById('tela-login').classList.remove('active');
-                document.getElementById('app-content').style.display = 'block';
-                showScreen('tela-motorista');
-                mudar(0);
-                verificarViagemPendente();
+        function mostrarTelaLogin() {
+            document.getElementById('tela-login').classList.add('active');
+            document.getElementById('app-content').style.display = 'none';
+        }
+
+        async function validarLogin() {
+            const senha = document.getElementById('senha-acesso').value;
+            const btn = document.getElementById('btn-login');
+            if (!senha) return alert('Digite a senha.');
+            btn.disabled = true;
+            btn.innerText = 'Entrando...';
+            try {
+                await laEntrar('motorista', senha);
+                document.getElementById('senha-acesso').value = '';
+            } catch (err) {
+                alert(laMensagemErroAuth(err));
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Entrar';
             }
         }
 
-        function logout() {
+        function verificarSessao() {
+            laObservarAuth(mostrarAppLogado, mostrarTelaLogin);
+        }
+
+        async function logout() {
             if (running) return alert("Finalize a corrida antes de sair!");
-            localStorage.removeItem('sessao_la_cloud');
             localStorage.removeItem(TRIP_BACKUP_KEY);
+            await laSair();
             location.reload();
         }
 
@@ -1460,15 +1466,9 @@
                         [destinoSelecionado.lng, destinoSelecionado.lat]
                     ];
                     try {
-                        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
-                            method: 'POST',
-                            headers: { 'Authorization': ORS_KEY, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ coordinates: coords })
-                        });
-                        if (!res.ok) { resolve(); return; }
-                        const data = await res.json();
-                        if (!data.features || !data.features[0]) { resolve(); return; }
-                        const pts = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                        const geometria = await buscarGeometriaOrs(coords);
+                        if (!geometria) { resolve(); return; }
+                        const pts = coordsOrsParaPath(geometria);
                         polylinePlanejada = L.polyline(pts, {
                             color: ROUTE_PLANNED_COLOR,
                             weight: 6,
@@ -1485,49 +1485,182 @@
             });
         }
 
+        // ----- Fase 2: GPS (uma responsabilidade por função) -----
+
+        function publicarPosicaoAtualNoFirebase(carId, pos) {
+            db.ref('vehicles/' + carId + '/last_pos').set({
+                lat: pos[0], lng: pos[1], driver,
+                km_atual: (dist / 1000).toFixed(2),
+                last_update: new Date().toLocaleString('pt-BR')
+            });
+        }
+
+        /**
+         * Primeiro ponto válido da corrida:
+         * ainda não calcula distância, apenas fixa referência inicial.
+         */
+        function processarPrimeiroPontoGps(pos) {
+            path.push(pos);
+            polyline.addLatLng(pos);
+            marker.setLatLng(pos);
+            atualizarLinhaSaidaDaBase();
+            map.setView(pos, 17);
+        }
+
+        /**
+         * Para pontos seguintes, aplica filtros anti-ruído:
+         * - < 3m: tremor parado
+         * - > 120m: salto improvável de GPS
+         */
+        function processarPontoGpsContinuo(pos) {
+            const last = path[path.length - 1];
+            const d = L.latLng(last).distanceTo(pos);
+            if (d < 3 || d > 120) return false;
+
+            dist += d;
+            path.push(pos);
+            marker.setLatLng(pos);
+            polyline.addLatLng(pos);
+
+            if (path.length === 2) {
+                atualizarLinhaSaidaDaBase();
+                renderizarUnidadesNoMapa();
+            }
+
+            seguirCarro(pos);
+            atualizarKmDisplay();
+            atualizarTrajetoAoVivoNasRuas();
+            return true;
+        }
+
+        function tratarErroGps(err) {
+            atualizarGpsUi(999, 'bad');
+            if (err.code === 1) alert("Ative a localização nas configurações.");
+            else if (err.code === 2) alert("GPS indisponível.");
+        }
+
+        function onPosicaoGps(carId, p) {
+            const acc = p.coords.accuracy;
+            const pos = [p.coords.latitude, p.coords.longitude];
+            if (acc > GPS_ACCURACY_LIMIT) {
+                atualizarGpsUi(acc, 'bad');
+                return;
+            }
+
+            atualizarGpsUi(acc, acc <= 25 ? 'ok' : 'warn');
+
+            if (path.length === 0) {
+                processarPrimeiroPontoGps(pos);
+                return;
+            }
+
+            const aceito = processarPontoGpsContinuo(pos);
+            if (!aceito) return;
+            publicarPosicaoAtualNoFirebase(carId, pos);
+        }
+
         function iniciarWatchGps(carId) {
             if (watch) {
                 navigator.geolocation.clearWatch(watch);
                 watch = null;
             }
-            watch = navigator.geolocation.watchPosition(p => {
-                    const acc = p.coords.accuracy;
-                    const pos = [p.coords.latitude, p.coords.longitude];
-                    if (acc > GPS_ACCURACY_LIMIT) { atualizarGpsUi(acc, 'bad'); return; }
-                    atualizarGpsUi(acc, acc <= 25 ? 'ok' : 'warn');
+            watch = navigator.geolocation.watchPosition(
+                p => onPosicaoGps(carId, p),
+                err => tratarErroGps(err),
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 25000 }
+            );
+        }
 
-                    if (path.length === 0) {
-                        path.push(pos);
-                        polyline.addLatLng(pos);
-                        marker.setLatLng(pos);
-                        atualizarLinhaSaidaDaBase();
-                        map.setView(pos, 17);
-                        return;
-                    }
-                    const last = path[path.length - 1];
-                    const d = L.latLng(last).distanceTo(pos);
-                    if (d < 3 || d > 120) return;
-                    dist += d;
-                    path.push(pos);
-                    marker.setLatLng(pos);
-                    polyline.addLatLng(pos);
-                    if (path.length === 2) {
-                        atualizarLinhaSaidaDaBase();
-                        renderizarUnidadesNoMapa();
-                    }
-                    seguirCarro(pos);
-                    atualizarKmDisplay();
-                    atualizarTrajetoAoVivoNasRuas();
-                    db.ref('vehicles/' + carId + '/last_pos').set({
-                        lat: pos[0], lng: pos[1], driver,
-                        km_atual: (dist / 1000).toFixed(2),
-                        last_update: new Date().toLocaleString('pt-BR')
-                    });
-                }, err => {
-                    atualizarGpsUi(999, 'bad');
-                    if (err.code === 1) alert("Ative a localização nas configurações.");
-                    else if (err.code === 2) alert("GPS indisponível.");
-                }, { enableHighAccuracy: true, maximumAge: 0, timeout: 25000 });
+        // ----- Fase 2: ciclo da corrida (validação → iniciar → finalizar) -----
+
+        /**
+         * Valida as regras mínimas para iniciar uma corrida.
+         * Separar validação em função ajuda a estudar e testar regra de negócio isoladamente.
+         */
+        function validarInicioCorrida() {
+            if (!destinoSelecionado) return 'Selecione um destino na barra (ou "Outros" para corrida livre).';
+            const motivoCorrida = getMotivoCorridaResolvido();
+            if (!motivoCorrida) return 'Selecione o motivo da corrida.';
+            return '';
+        }
+
+        function configurarBotaoAguardandoGps(btn) {
+            btn.disabled = true;
+            btn.innerText = 'Aguardando GPS...';
+        }
+
+        function resetarBotaoIniciar(btn) {
+            btn.disabled = false;
+            btn.innerText = 'Iniciar corrida';
+            btn.className = 'btn-yellow';
+        }
+
+        function configurarUiCorridaAtiva(btn) {
+            btn.disabled = false;
+            btn.innerText = 'Finalizar corrida';
+            btn.className = 'btn-yellow stop';
+            setModoCorridaAtiva(true);
+            renderizarBarraEnderecos();
+            renderizarUnidadesNoMapa();
+            atualizarBotoesNavegacao();
+            atualizarKmDisplay();
+            mapFollowCar = true;
+            atualizarGpsUi(99, 'wait');
+            const btnRota = document.getElementById('btn-ver-rota');
+            if (btnRota) {
+                btnRota.style.display = 'block';
+                btnRota.textContent = 'Trajeto';
+            }
+        }
+
+        async function garantirPermissaoLocalizacao(btn) {
+            try {
+                await solicitarPermissaoLocalizacao();
+                return true;
+            } catch (err) {
+                resetarBotaoIniciar(btn);
+                if (err && err.code === 1) {
+                    alert('Permita a localização para iniciar a corrida.\n\nConfigurações do celular → este site → Localização.');
+                } else {
+                    alert('Não foi possível obter GPS. Tente de novo ao ar livre.');
+                }
+                return false;
+            }
+        }
+
+        function iniciarTimersCorrida() {
+            checkInterval = setInterval(() => {
+                const hrs = Math.floor((Date.now() - startTime) / 3600000);
+                if (hrs > 0 && hrs % CHECK_HOURS === 0) {
+                    if (confirm(`Corrida ativa há ${hrs}h!\nFinalizar agora?`)) fecharCorrida();
+                }
+            }, 60000);
+
+            timer = setInterval(() => {
+                document.getElementById('tempo').innerText = formatarTempo(Date.now() - startTime);
+                salvarBackupViagem();
+            }, 1000);
+        }
+
+        async function iniciarCorrida(carId, btn) {
+            configurarBotaoAguardandoGps(btn);
+            const ok = await garantirPermissaoLocalizacao(btn);
+            if (!ok) return;
+
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+            running = true;
+            ultimoSnapAoVivo = 0;
+            path = [];
+            dist = 0;
+            if (polyline) polyline.setLatLngs([]);
+            startTime = Date.now();
+
+            configurarUiCorridaAtiva(btn);
+            db.ref('vehicles/' + carId + '/status').set('EM MOVIMENTO');
+            window.addEventListener('beforeunload', alertaFechar);
+            await desenharRotaPlanejadaAteDestino();
+            iniciarTimersCorrida();
+            iniciarWatchGps(carId);
         }
 
         async function toggleTracking() {
@@ -1535,59 +1668,14 @@
             const carId = fleet[idx].id;
 
             if (!running) {
-                if (!destinoSelecionado) return alert('Selecione um destino na barra (ou "Outros" para corrida livre).');
-                const motivoCorrida = getMotivoCorridaResolvido();
-                if (!motivoCorrida) return alert('Selecione o motivo da corrida.');
-                btn.disabled = true;
-                btn.innerText = 'Aguardando GPS...';
-                try {
-                    await solicitarPermissaoLocalizacao();
-                } catch (err) {
-                    btn.disabled = false;
-                    btn.innerText = 'Iniciar corrida';
-                    if (err && err.code === 1) return alert('Permita a localização para iniciar a corrida.\n\nConfigurações do celular → este site → Localização.');
-                    return alert('Não foi possível obter GPS. Tente de novo ao ar livre.');
-                }
-                try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
-                running = true;
-                setModoCorridaAtiva(true);
-                ultimoSnapAoVivo = 0;
-                path = [];
-                dist = 0;
-                if (polyline) polyline.setLatLngs([]);
-                renderizarBarraEnderecos();
-                renderizarUnidadesNoMapa();
-                atualizarBotoesNavegacao();
-                atualizarKmDisplay();
-                btn.disabled = false;
-                btn.innerText = 'Finalizar corrida';
-                btn.className = 'btn-yellow stop';
-                mapFollowCar = true;
-                startTime = Date.now();
-                atualizarGpsUi(99, 'wait');
-                const btnRota = document.getElementById('btn-ver-rota');
-                if (btnRota) { btnRota.style.display = 'block'; btnRota.textContent = 'Trajeto'; }
-                db.ref('vehicles/' + carId + '/status').set('EM MOVIMENTO');
-                window.addEventListener('beforeunload', alertaFechar);
-                await desenharRotaPlanejadaAteDestino();
-
-                checkInterval = setInterval(() => {
-                    const hrs = Math.floor((Date.now() - startTime) / 3600000);
-                    if (hrs > 0 && hrs % CHECK_HOURS === 0) {
-                        if (confirm(`Corrida ativa há ${hrs}h!\nFinalizar agora?`)) fecharCorrida();
-                    }
-                }, 60000);
-
-                timer = setInterval(() => {
-                    document.getElementById('tempo').innerText = formatarTempo(Date.now() - startTime);
-                    salvarBackupViagem();
-                }, 1000);
-
-                iniciarWatchGps(carId);
-            } else {
-                if (!confirm('Finalizar esta corrida?')) return;
-                fecharCorrida();
+                const erroValidacao = validarInicioCorrida();
+                if (erroValidacao) return alert(erroValidacao);
+                await iniciarCorrida(carId, btn);
+                return;
             }
+
+            if (!confirm('Finalizar esta corrida?')) return;
+            fecharCorrida();
         }
 
         function alertaFechar(e) { e.preventDefault(); e.returnValue = ''; }
@@ -1602,6 +1690,40 @@
             setModoCorridaAtiva(false);
         }
 
+        // ----- Fase 2: serviço ORS (map-matching e rotas planejadas) -----
+
+        /** Leaflet usa [lat, lng]; a API ORS exige [lng, lat]. */
+        function pathParaCoordsOrs(pontos) {
+            return pontos.map(p => [p[1], p[0]]);
+        }
+
+        function coordsOrsParaPath(coords) {
+            return coords.map(c => [c[1], c[0]]);
+        }
+
+        /**
+         * Uma única função HTTP para ORS — evita duplicar fetch em snap e rota planejada (DRY).
+         * Retorna coordinates GeoJSON ou null se falhar.
+         */
+        async function buscarGeometriaOrs(coords, opcoes) {
+            if (!ORS_KEY) return null;
+            const body = { coordinates: coords };
+            if (opcoes && opcoes.radiuses) body.radiuses = opcoes.radiuses;
+            try {
+                const res = await fetch(ORS_DIRECTIONS_URL, {
+                    method: 'POST',
+                    headers: { 'Authorization': ORS_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (!data.features || !data.features[0]) return null;
+                return data.features[0].geometry.coordinates;
+            } catch (e) {
+                return null;
+            }
+        }
+
         function amostragemPath(pontos, max) {
             if (pontos.length <= max) return pontos;
             const result = [pontos[0]];
@@ -1611,52 +1733,49 @@
             return result;
         }
 
+        /** Encaixa pontos GPS na malha viária (map-matching). */
         async function snapToRoad(rawPath, maxPontos) {
             if (rawPath.length < 2) return rawPath;
             const sampled = amostragemPath(rawPath, maxPontos || 50);
-            const coords = sampled.map(p => [p[1], p[0]]);
-            try {
-                const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
-                    method: 'POST',
-                    headers: { 'Authorization': ORS_KEY, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ coordinates: coords, radiuses: coords.map(() => 50) })
-                });
-                if (!res.ok) return rawPath;
-                const data = await res.json();
-                if (!data.features || !data.features[0]) return rawPath;
-                return data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-            } catch (e) { return rawPath; }
+            const coords = pathParaCoordsOrs(sampled);
+            const geometria = await buscarGeometriaOrs(coords, { radiuses: coords.map(() => 50) });
+            return geometria ? coordsOrsParaPath(geometria) : rawPath;
+        }
+
+        function podeExecutarSnapAoVivo() {
+            if (!running || snapAoVivoEmCurso || path.length < SNAP_MIN_PONTOS) return false;
+            if (Date.now() - ultimoSnapAoVivo < SNAP_AO_VIVO_MS) return false;
+            return true;
+        }
+
+        function aplicarSnapNaPolyline(snapped) {
+            if (polyline && snapped.length >= 2) polyline.setLatLngs(snapped);
         }
 
         async function atualizarTrajetoAoVivoNasRuas() {
-            if (!running || snapAoVivoEmCurso || path.length < SNAP_MIN_PONTOS) return;
-            if (Date.now() - ultimoSnapAoVivo < SNAP_AO_VIVO_MS) return;
+            if (!podeExecutarSnapAoVivo()) return;
             snapAoVivoEmCurso = true;
             try {
                 const snapped = await snapToRoad(path, 40);
-                if (polyline && snapped.length >= 2) polyline.setLatLngs(snapped);
+                aplicarSnapNaPolyline(snapped);
                 ultimoSnapAoVivo = Date.now();
-            } catch (e) { /* mantém linha GPS */ }
+            } catch (e) { /* mantém linha GPS bruta */ }
             finally { snapAoVivoEmCurso = false; }
         }
 
-        async function fecharCorrida() {
-            const btn = document.getElementById('btn-master');
-            if (path.length < 2) {
-                return alert('Poucos pontos de GPS.\nAnde um pouco com a corrida ativa ou aguarde sinal melhor antes de finalizar.');
+        function calcularKmDoPath(pathData) {
+            let km = 0;
+            for (let i = 1; i < pathData.length; i++) {
+                km += L.latLng(pathData[i - 1]).distanceTo(pathData[i]);
             }
-            btn.disabled = true;
-            btn.innerText = "Ajustando rota...";
-            const snappedPath = await snapToRoad(path);
-            btn.innerText = "Salvando...";
-            let kmSnapped = 0;
-            for (let i = 1; i < snappedPath.length; i++) {
-                kmSnapped += L.latLng(snappedPath[i - 1]).distanceTo(snappedPath[i]);
-            }
-            const kmFinal = parseFloat((kmSnapped / 1000).toFixed(2));
-            const carId = fleet[idx].id;
-            const trip = {
-                car: fleet[idx].nome, driver, km: kmFinal,
+            return parseFloat((km / 1000).toFixed(2));
+        }
+
+        function montarTripFinal(snappedPath, kmFinal) {
+            return {
+                car: fleet[idx].nome,
+                driver,
+                km: kmFinal,
                 time: document.getElementById('tempo').innerText,
                 date: new Date().toLocaleString('pt-BR'),
                 path: snappedPath,
@@ -1665,10 +1784,41 @@
                 // Campo didático da Fase 1: exemplo de ampliação do JSON salvo em trips.
                 motivoCorrida: getMotivoCorridaResolvido() || '—'
             };
+        }
+
+        async function persistirTripFinal(carId, kmFinal, trip) {
+            await db.ref('vehicles/' + carId + '/status').set("DISPONÍVEL");
+            await db.ref('vehicles/' + carId + '/odometer').transaction(c => (c || 0) + kmFinal);
+            await db.ref('trips').push(trip);
+        }
+
+        function restaurarBotaoFinalizar(btn) {
+            btn.disabled = false;
+            btn.innerText = "Finalizar corrida";
+            btn.className = "btn-yellow stop";
+        }
+
+        function validarPathMinimoParaFinalizar() {
+            return path.length >= 2;
+        }
+
+        async function fecharCorrida() {
+            const btn = document.getElementById('btn-master');
+            if (!validarPathMinimoParaFinalizar()) {
+                return alert('Poucos pontos de GPS.\nAnde um pouco com a corrida ativa ou aguarde sinal melhor antes de finalizar.');
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Ajustando rota...";
+            const snappedPath = await snapToRoad(path);
+            btn.innerText = "Salvando...";
+
+            const kmFinal = calcularKmDoPath(snappedPath);
+            const carId = fleet[idx].id;
+            const trip = montarTripFinal(snappedPath, kmFinal);
+
             try {
-                await db.ref('vehicles/' + carId + '/status').set("DISPONÍVEL");
-                await db.ref('vehicles/' + carId + '/odometer').transaction(c => (c || 0) + kmFinal);
-                await db.ref('trips').push(trip);
+                await persistirTripFinal(carId, kmFinal, trip);
                 pararRastreio();
                 running = false;
                 localStorage.removeItem(TRIP_BACKUP_KEY);
@@ -1676,9 +1826,7 @@
                 location.reload();
             } catch (e) {
                 alert("Erro ao sincronizar. A corrida continua ativa — toque em Finalizar de novo.");
-                btn.disabled = false;
-                btn.innerText = "Finalizar corrida";
-                btn.className = "btn-yellow stop";
+                restaurarBotaoFinalizar(btn);
             }
         }
     </script>

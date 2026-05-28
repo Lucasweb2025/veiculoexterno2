@@ -1,0 +1,44 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gerar la-config.js a partir do secret
+        env:
+          ORS_KEY: ${{ secrets.ORS_KEY }}
+        run: |
+          if [ -z "$ORS_KEY" ]; then
+            echo "window.LA_CONFIG = window.LA_CONFIG || {};" > la-config.js
+            echo "window.LA_CONFIG.ORS_KEY = '';" >> la-config.js
+            echo "::warning::Secret ORS_KEY não definido — rotas ORS desativadas no site."
+          else
+            printf 'window.LA_CONFIG = window.LA_CONFIG || {};\nwindow.LA_CONFIG.ORS_KEY = "%s";\n' "$ORS_KEY" > la-config.js
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - uses: actions/deploy-pages@v4
+        id: deployment

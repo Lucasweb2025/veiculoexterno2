@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="la-firebase.js"></script>
     <style>
         :root { --orange: #f39c12; }
         body { background: #000; font-family: -apple-system, sans-serif; color: white; }
@@ -23,9 +25,9 @@
         <div class="text-center w-full max-w-xs">
             <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="h-16 mx-auto mb-6" style="filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.4));">
             <h2 class="text-[--orange] text-sm font-black uppercase tracking-wider mb-6">Painel de Gestão</h2>
-            <input type="password" id="senha-painel" placeholder="Senha Master" onkeypress="if(event.key==='Enter') loginPainel()"
+            <input type="password" id="senha-painel" placeholder="Senha" onkeypress="if(event.key==='Enter') loginPainel()"
                 class="w-full p-4 rounded-xl border border-[--orange] bg-white/5 text-white text-center text-lg mb-4 outline-none">
-            <button onclick="loginPainel()" class="w-full p-4 rounded-full border-2 border-[--orange] text-[--orange] font-bold uppercase tracking-wider hover:bg-[--orange] hover:text-black transition-all">Acessar</button>
+            <button type="button" id="btn-login-painel" onclick="loginPainel()" class="w-full p-4 rounded-full border-2 border-[--orange] text-[--orange] font-bold uppercase tracking-wider hover:bg-[--orange] hover:text-black transition-all">Acessar</button>
         </div>
     </div>
 
@@ -62,41 +64,46 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyB4wDK8VddBeOOrfndLd7LemSGDPupKjF0",
-            authDomain: "la-controle.firebaseapp.com",
-            databaseURL: "https://la-controle-default-rtdb.firebaseio.com",
-            projectId: "la-controle",
-            storageBucket: "la-controle.firebasestorage.app",
-            messagingSenderId: "847252305513",
-            appId: "1:847252305513:web:d2caa9b0404806ea8794f8"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const db = laDb();
         let map, polyline;
-
-        const SENHA_MESTRA = "LACUSTOM2026";
         const tripCache = {};
         const tripNames = {};
+        let handlerTrips = null;
 
-        (function verificarSessaoPainel() {
-            if (localStorage.getItem('sessao_la_painel') === 'ativa') {
-                document.getElementById('painel-login').style.display = 'none';
-                document.getElementById('painel-content').style.display = 'block';
-            }
-        })();
-
-        function loginPainel() {
-            if (document.getElementById('senha-painel').value.trim().toUpperCase() === SENHA_MESTRA) {
-                localStorage.setItem('sessao_la_painel', 'ativa');
-                document.getElementById('painel-login').style.display = 'none';
-                document.getElementById('painel-content').style.display = 'block';
-            } else { alert("Senha Incorreta!"); }
+        function mostrarPainelLogado() {
+            document.getElementById('painel-login').style.display = 'none';
+            document.getElementById('painel-content').style.display = 'block';
+            iniciarEscutaTrips();
         }
 
-        function logoutPainel() {
-            localStorage.removeItem('sessao_la_painel');
+        function mostrarPainelLogin() {
+            document.getElementById('painel-login').style.display = 'flex';
+            document.getElementById('painel-content').style.display = 'none';
+            pararEscutaTrips();
+        }
+
+        laObservarAuth(mostrarPainelLogado, mostrarPainelLogin);
+
+        async function loginPainel() {
+            const senha = document.getElementById('senha-painel').value;
+            const btn = document.getElementById('btn-login-painel');
+            if (!senha) return alert('Digite a senha.');
+            btn.disabled = true;
+            btn.textContent = 'Entrando...';
+            try {
+                await laEntrar('painel', senha);
+                document.getElementById('senha-painel').value = '';
+            } catch (err) {
+                alert(laMensagemErroAuth(err));
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Acessar';
+            }
+        }
+
+        async function logoutPainel() {
+            pararEscutaTrips();
+            await laSair();
             location.reload();
         }
 
@@ -106,23 +113,25 @@
             return d.innerHTML;
         }
 
-        db.ref('trips').on('value', (snapshot) => {
-            const data = snapshot.val();
-            const container = document.getElementById('lista-viagens');
-            container.innerHTML = "";
+        function iniciarEscutaTrips() {
+            if (handlerTrips) return;
+            handlerTrips = function (snapshot) {
+                const data = snapshot.val();
+                const container = document.getElementById('lista-viagens');
+                container.innerHTML = "";
 
-            if (!data) return;
+                if (!data) return;
 
-            Object.entries(data).reverse().forEach(([id, trip]) => {
-                tripCache[id] = trip.path || [];
-                tripNames[id] = trip.car || '---';
-                const carName = esc(trip.car);
-                const driverName = esc(trip.driver);
-                const date = esc(trip.date);
-                const km = parseFloat(trip.km || 0).toFixed(2);
-                const motivoCorrida = esc(trip.motivoCorrida || '—');
+                Object.entries(data).reverse().forEach(([id, trip]) => {
+                    tripCache[id] = trip.path || [];
+                    tripNames[id] = trip.car || '---';
+                    const carName = esc(trip.car);
+                    const driverName = esc(trip.driver);
+                    const date = esc(trip.date);
+                    const km = parseFloat(trip.km || 0).toFixed(2);
+                    const motivoCorrida = esc(trip.motivoCorrida || '—');
 
-                container.innerHTML += `
+                    container.innerHTML += `
                     <div class="card border-l-2 border-l-zinc-700 hover:border-l-[--orange] transition-all">
                         <div class="flex justify-between items-center">
                             <div>
@@ -137,8 +146,16 @@
                             </div>
                         </div>
                     </div>`;
-            });
-        });
+                });
+            };
+            db.ref('trips').on('value', handlerTrips);
+        }
+
+        function pararEscutaTrips() {
+            if (!handlerTrips) return;
+            db.ref('trips').off('value', handlerTrips);
+            handlerTrips = null;
+        }
 
         function abrirMapaPorId(tripId) {
             abrirMapa(tripCache[tripId] || [], tripNames[tripId] || '---');
