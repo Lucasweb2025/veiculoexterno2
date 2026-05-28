@@ -256,7 +256,7 @@
             transition: min-height 0.35s ease;
         }
         #tela-mapa.corrida-ativa .map-area-99 {
-            min-height: 68vh;
+            min-height: 58vh;
         }
         #tela-mapa.corrida-ativa .bottom-sheet {
             box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
@@ -417,6 +417,9 @@
             border-radius: 20px 20px 0 0;
             box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
             padding: 8px 16px calc(12px + var(--safe-bottom));
+            max-height: 48vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .sheet-handle {
             width: 40px;
@@ -484,6 +487,10 @@
             justify-content: space-between;
             gap: 14px;
             padding: 14px 0 8px;
+            position: sticky;
+            bottom: 0;
+            background: var(--sheet);
+            z-index: 5;
         }
         .sheet-km-block { flex-shrink: 0; }
         .sheet-km-big {
