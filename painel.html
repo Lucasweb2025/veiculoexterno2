@@ -233,6 +233,44 @@
             padding: 32px 16px;
             font-size: 0.9rem;
         }
+        .paginacao {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 4px;
+            padding: 14px 16px;
+            background: var(--white);
+            border-radius: 16px;
+            border: 1px solid var(--gray-border);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .paginacao-info {
+            flex: 1;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+        .paginacao-info b { color: var(--black); }
+        .btn-pagina {
+            flex-shrink: 0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: 2px solid var(--gray-border);
+            background: var(--white);
+            color: var(--black);
+        }
+        .btn-pagina:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .btn-pagina:not(:disabled):active { background: var(--gray-bg); }
 
         /* —— Modal mapa —— */
         .modal-overlay {
@@ -326,6 +364,10 @@
                             <select id="filtro-motorista" class="filtro-input"><option value="todos">Todos</option></select>
                         </div>
                         <div>
+                            <label class="filtro-label" for="filtro-veiculo">Veículo</label>
+                            <select id="filtro-veiculo" class="filtro-input"><option value="todos">Todos</option></select>
+                        </div>
+                        <div>
                             <label class="filtro-label" for="filtro-destino">Destino</label>
                             <select id="filtro-destino" class="filtro-input"><option value="todos">Todos</option></select>
                         </div>
@@ -345,6 +387,7 @@
                 </div>
 
                 <div id="lista-viagens" class="lista-viagens"></div>
+                <div id="paginacao" class="paginacao" aria-label="Paginação do histórico"></div>
             </main>
         </div>
     </div>
@@ -365,7 +408,9 @@
         const tripNames = {};
         let handlerTrips = null;
         let tripsAll = {};
-        let filtrosAtivos = { motorista: 'todos', destino: 'todos', dataInicio: '', dataFim: '' };
+        let filtrosAtivos = { motorista: 'todos', veiculo: 'todos', destino: 'todos', dataInicio: '', dataFim: '' };
+        const ITENS_POR_PAGINA = 10;
+        let paginaAtual = 1;
 
         function mostrarPainelLogado() {
             document.getElementById('painel-login').style.display = 'none';
@@ -459,10 +504,16 @@
             return dest === f || id === f || dest.includes(f);
         }
 
+        function matchVeiculo(trip, filtro) {
+            if (!filtro || filtro === 'todos') return true;
+            return normalizarTexto(trip.car) === normalizarTexto(filtro);
+        }
+
         function tripPassaFiltro(trip) {
             const inicio = parseInputDate(filtrosAtivos.dataInicio);
             const fim = parseInputDate(filtrosAtivos.dataFim);
             return matchMotorista(trip, filtrosAtivos.motorista)
+                && matchVeiculo(trip, filtrosAtivos.veiculo)
                 && matchDestino(trip, filtrosAtivos.destino)
                 && tripNoPeriodo(trip, inicio, fim);
         }
@@ -487,28 +538,80 @@
 
         function atualizarOpcoesFiltro() {
             const motoristas = new Set();
+            const veiculos = new Set();
             const destinos = new Set();
             Object.values(tripsAll).forEach(trip => {
                 if (trip.driver) motoristas.add(String(trip.driver).trim());
+                if (trip.car) veiculos.add(String(trip.car).trim());
                 if (trip.destino) destinos.add(String(trip.destino).trim());
             });
             preencherSelect('filtro-motorista', [...motoristas], filtrosAtivos.motorista);
+            preencherSelect('filtro-veiculo', [...veiculos], filtrosAtivos.veiculo);
             preencherSelect('filtro-destino', [...destinos], filtrosAtivos.destino);
+        }
+
+        function obterViagensFiltradas() {
+            return Object.entries(tripsAll)
+                .filter(([, trip]) => tripPassaFiltro(trip))
+                .reverse();
+        }
+
+        function renderizarPaginacao(total, totalPaginas) {
+            const pagEl = document.getElementById('paginacao');
+            if (!pagEl) return;
+            if (totalPaginas <= 1) {
+                pagEl.style.display = 'none';
+                pagEl.innerHTML = '';
+                return;
+            }
+            const inicio = (paginaAtual - 1) * ITENS_POR_PAGINA + 1;
+            const fim = Math.min(paginaAtual * ITENS_POR_PAGINA, total);
+            pagEl.style.display = 'flex';
+            pagEl.innerHTML = `
+                <button type="button" class="btn-pagina" onclick="irPaginaAnterior()" ${paginaAtual <= 1 ? 'disabled' : ''}>Anterior</button>
+                <div class="paginacao-info">
+                    Página <b>${paginaAtual}</b> de <b>${totalPaginas}</b><br>
+                    <span>${inicio}–${fim} de ${total}</span>
+                </div>
+                <button type="button" class="btn-pagina" onclick="irPaginaProxima()" ${paginaAtual >= totalPaginas ? 'disabled' : ''}>Próxima</button>`;
+        }
+
+        function irPaginaAnterior() {
+            if (paginaAtual <= 1) return;
+            paginaAtual--;
+            renderizarListaViagens();
+            document.querySelector('.main-painel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function irPaginaProxima() {
+            const totalPaginas = Math.ceil(obterViagensFiltradas().length / ITENS_POR_PAGINA);
+            if (paginaAtual >= totalPaginas) return;
+            paginaAtual++;
+            renderizarListaViagens();
+            document.querySelector('.main-painel').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function renderizarListaViagens() {
             const container = document.getElementById('lista-viagens');
             container.innerHTML = '';
-            const entries = Object.entries(tripsAll)
-                .filter(([, trip]) => tripPassaFiltro(trip))
-                .reverse();
+            const entries = obterViagensFiltradas();
+            const total = entries.length;
+            const totalPaginas = Math.max(1, Math.ceil(total / ITENS_POR_PAGINA));
 
-            if (!entries.length) {
+            if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+            if (paginaAtual < 1) paginaAtual = 1;
+
+            if (!total) {
+                paginaAtual = 1;
                 container.innerHTML = '<p class="empty-msg">Nenhuma viagem neste filtro.</p>';
+                renderizarPaginacao(0, 0);
                 return;
             }
 
-            entries.forEach(([id, trip]) => {
+            const offset = (paginaAtual - 1) * ITENS_POR_PAGINA;
+            const paginaEntries = entries.slice(offset, offset + ITENS_POR_PAGINA);
+
+            paginaEntries.forEach(([id, trip]) => {
                 tripCache[id] = trip.path || [];
                 tripNames[id] = trip.car || '---';
                 const carName = esc(trip.car);
@@ -535,6 +638,8 @@
                         </div>
                     </div>`;
             });
+
+            renderizarPaginacao(total, totalPaginas);
         }
 
         function aplicarFiltros() {
@@ -547,19 +652,23 @@
             }
             filtrosAtivos = {
                 motorista: document.getElementById('filtro-motorista').value,
+                veiculo: document.getElementById('filtro-veiculo').value,
                 destino: document.getElementById('filtro-destino').value,
                 dataInicio,
                 dataFim
             };
+            paginaAtual = 1;
             renderizarListaViagens();
         }
 
         function limparFiltros() {
             document.getElementById('filtro-motorista').value = 'todos';
+            document.getElementById('filtro-veiculo').value = 'todos';
             document.getElementById('filtro-destino').value = 'todos';
             document.getElementById('filtro-data-inicio').value = '';
             document.getElementById('filtro-data-fim').value = '';
-            filtrosAtivos = { motorista: 'todos', destino: 'todos', dataInicio: '', dataFim: '' };
+            filtrosAtivos = { motorista: 'todos', veiculo: 'todos', destino: 'todos', dataInicio: '', dataFim: '' };
+            paginaAtual = 1;
             renderizarListaViagens();
         }
 
