@@ -36,9 +36,61 @@ function laMensagemErroAuth(err) {
         'auth/too-many-requests': 'Muitas tentativas. Aguarde alguns minutos.',
         'auth/network-request-failed': 'Sem internet para validar o login.',
         'auth/missing-fields': 'Preencha e-mail e senha.',
-        'auth/invalid-credential': 'E-mail ou senha incorretos.'
+        'auth/invalid-credential': 'E-mail ou senha incorretos.',
+        'auth/no-role': 'Usuário sem perfil.\n\nPeça ao gestor para cadastrar seu papel em /users no Firebase (FIREBASE-PERFIS.md).',
+        'auth/wrong-role': 'Esta conta não acessa esta tela.\n\nMotorista → app. Gestor → painel.',
+        'auth/not-logged-in': 'Sessão expirada. Entre de novo.'
     };
     return map[code] || 'Não foi possível entrar. Confira usuário no Firebase e tente de novo.';
+}
+
+/** Papéis em /users/{uid}/role — ver FIREBASE-PERFIS.md */
+const LA_PAPEIS = {
+    MOTORISTA: 'motorista',
+    GESTOR: 'gestor',
+    ADMIN: 'admin'
+};
+
+async function laObterPapelUsuario(user) {
+    const u = user || laAuth().currentUser;
+    if (!u) return null;
+    const snap = await laDb().ref('users/' + u.uid + '/role').once('value');
+    return snap.val() || null;
+}
+
+async function laValidarPapel(papeisPermitidos) {
+    const user = laAuth().currentUser;
+    if (!user) {
+        const err = new Error('not-logged');
+        err.code = 'auth/not-logged-in';
+        throw err;
+    }
+    const papel = await laObterPapelUsuario(user);
+    if (!papel) {
+        const err = new Error('no-role');
+        err.code = 'auth/no-role';
+        throw err;
+    }
+    if (!papeisPermitidos.includes(papel)) {
+        const err = new Error('wrong-role');
+        err.code = 'auth/wrong-role';
+        throw err;
+    }
+    return papel;
+}
+
+/**
+ * Salva viagem final de forma atômica: status + odômetro + trip num único update.
+ */
+async function laPersistirViagemFinal(carId, kmFinal, trip) {
+    const tripKey = laDb().ref('trips').push().key;
+    const odoSnap = await laDb().ref('vehicles/' + carId + '/odometer').once('value');
+    const odoAtual = odoSnap.val() || 0;
+    const updates = {};
+    updates['vehicles/' + carId + '/status'] = 'DISPONÍVEL';
+    updates['vehicles/' + carId + '/odometer'] = odoAtual + kmFinal;
+    updates['trips/' + tripKey] = trip;
+    await laDb().ref().update(updates);
 }
 
 /** Login com e-mail e senha digitados na tela (Firebase Authentication). */
@@ -57,8 +109,16 @@ async function laSair() {
 }
 
 function laObservarAuth(onLogado, onDeslogado) {
-    laAuth().onAuthStateChanged(function (user) {
-        if (user) onLogado(user);
-        else onDeslogado();
+    laAuth().onAuthStateChanged(async function (user) {
+        if (user) {
+            try {
+                await onLogado(user);
+            } catch (err) {
+                await laSair();
+                onDeslogado(err);
+            }
+        } else {
+            onDeslogado();
+        }
     });
 }

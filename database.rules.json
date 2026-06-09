@@ -1,6 +1,40 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null"
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || isGestor())",
+        ".write": "auth != null && isGestor()"
+      }
+    },
+    "trips": {
+      ".read": "isGestor()",
+      "$tripId": {
+        ".read": "isGestor()",
+        ".write": "isMotorista() && !data.exists()"
+      }
+    },
+    "vehicles": {
+      ".read": "auth != null && (isGestor() || isMotorista())",
+      "$vehicleId": {
+        "status": {
+          ".write": "isMotorista()"
+        },
+        "last_pos": {
+          ".write": "isMotorista()"
+        },
+        "odometer": {
+          ".write": "isMotorista()"
+        }
+      }
+    },
+    "unidades": {
+      ".read": "auth != null && (isGestor() || isMotorista())",
+      ".write": "isGestor()"
+    }
+  },
+  "functions": {
+    "papel": "root.child('users').child(auth.uid).child('role').val()",
+    "isGestor": "auth != null && (papel() === 'gestor' || papel() === 'admin')",
+    "isMotorista": "auth != null && (papel() === 'motorista' || papel() === 'admin')"
   }
 }

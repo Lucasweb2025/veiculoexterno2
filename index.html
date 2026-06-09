@@ -301,7 +301,7 @@
         #tela-mapa.corrida-ativa #sheet-motivo {
             display: none !important;
         }
-        /* Antes da corrida: só o botão Iniciar (destino na barra lateral) */
+        /* Antes da corrida: destino embaixo + botão Iniciar */
         #tela-mapa:not(.corrida-ativa) .sheet-handle,
         #tela-mapa:not(.corrida-ativa) .sheet-scroll {
             display: none !important;
@@ -311,22 +311,25 @@
         }
         #tela-mapa:not(.corrida-ativa) .bottom-sheet {
             max-height: none;
-            padding-top: 10px;
+            padding-top: 0;
         }
         #tela-mapa:not(.corrida-ativa) .map-area-99 {
             flex: 1;
-            min-height: 58vh;
+            min-height: 52vh;
         }
         #tela-mapa:not(.corrida-ativa) .sheet-cta {
             border-top: none;
             margin-top: 0;
-            padding: 8px 0 calc(10px + var(--safe-bottom));
+            padding: 0 0 calc(10px + var(--safe-bottom));
         }
         #tela-mapa:not(.corrida-ativa) .sheet-cta .btn-yellow {
             width: 100%;
             flex: 1 1 100%;
             padding: 20px;
             font-size: 1.05rem;
+        }
+        #tela-mapa.corrida-ativa #destino-picker {
+            display: none !important;
         }
         .corrida-status-banner {
             display: none;
@@ -347,85 +350,122 @@
         }
         #tela-mapa #map { width: 100%; height: 100%; }
         .leaflet-container { background: var(--map-bg); font-family: inherit; }
-        /* Barra vertical — endereços prontos */
-        .enderecos-rail {
-            position: absolute;
-            left: 0;
-            top: calc(64px + var(--safe-top));
-            bottom: 12px;
-            z-index: 550;
-            width: 68px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            padding: 8px 6px;
+        /* Seletor de destino — embaixo, acima de Iniciar corrida */
+        .destino-picker {
+            padding: 12px 16px 10px;
             background: var(--white);
-            border-radius: 0 14px 14px 0;
-            box-shadow: 2px 0 16px rgba(0,0,0,0.12);
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            border-top: 1px solid var(--gray-border);
         }
-        .enderecos-rail-label {
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            font-size: 0.55rem;
+        .destino-picker-label {
+            display: block;
+            font-size: 0.72rem;
             font-weight: 800;
-            color: #aaa;
+            color: #888;
             text-transform: uppercase;
-            letter-spacing: 0.12em;
-            text-align: center;
-            padding: 4px 0 8px;
-            flex-shrink: 0;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
         }
-        .endereco-rail-btn {
-            flex-shrink: 0;
+        .destino-select {
             width: 100%;
-            min-height: 44px;
-            padding: 10px 6px;
+            padding: 14px 12px;
+            border: 2px solid var(--gray-border);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: var(--white);
+            color: var(--black);
+            margin-bottom: 10px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23333' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+        .destino-select:disabled { opacity: 0.5; }
+        .destino-chips {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .destino-chips::-webkit-scrollbar { display: none; }
+        .destino-chip {
+            flex-shrink: 0;
+            padding: 10px 14px;
             border: none;
-            border-radius: 10px;
+            border-radius: 999px;
             background: var(--gray-bg);
             color: var(--black);
-            font-size: 0.7rem;
-            font-weight: 800;
-            line-height: 1.2;
+            font-size: 0.82rem;
+            font-weight: 700;
             cursor: pointer;
-            text-align: center;
-            word-break: break-word;
-            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+            transition: background 0.15s;
         }
-        .endereco-rail-btn:active { opacity: 0.85; }
-        .endereco-rail-btn.on {
+        .destino-chip:active { opacity: 0.85; }
+        .destino-chip.on {
             background: var(--yellow);
-            color: var(--black);
             box-shadow: inset 0 0 0 2px var(--black);
         }
-        .endereco-rail-btn.sede {
-            background: var(--yellow);
-            font-weight: 800;
-            min-height: 48px;
-        }
-        .endereco-rail-btn.sede.on {
-            box-shadow: inset 0 0 0 2px var(--black);
-        }
-        .endereco-rail-btn.outros {
+        .destino-chip.sede { background: #fff8dc; }
+        .destino-chip.outros {
             font-weight: 600;
             color: #666;
-            min-height: 44px;
-            font-size: 0.58rem;
         }
-        .endereco-rail-btn.outros.on {
+        .destino-chip.outros.on {
             background: var(--yellow);
             color: var(--black);
             font-weight: 800;
         }
-        .endereco-rail-btn:disabled { opacity: 0.45; pointer-events: none; }
-        .endereco-rail-btn.trocar {
+        .destino-chip:disabled { opacity: 0.45; pointer-events: none; }
+        .destino-chip.trocar {
             background: var(--white);
             border: 2px solid var(--gray-border);
             color: #555;
             font-weight: 600;
-            min-height: 40px;
+        }
+        .destino-selecionado-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            background: var(--gray-bg);
+            border-radius: 12px;
+        }
+        .destino-selecionado-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .destino-selecionado-info small {
+            display: block;
+            font-size: 0.68rem;
+            font-weight: 800;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 2px;
+        }
+        .destino-selecionado-info strong {
+            display: block;
+            font-size: 1rem;
+            color: var(--black);
+        }
+        .destino-selecionado-info span {
+            display: block;
+            font-size: 0.72rem;
+            color: #666;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .destino-picker.tem-selecionado .destino-picker-aberto { display: none; }
+        .destino-picker:not(.tem-selecionado) .destino-selecionado-box { display: none; }
+        #tela-mapa:not(.corrida-ativa) .map-locate-btn {
+            bottom: calc(210px + var(--safe-bottom));
         }
         .btn-ja-saindo {
             width: 100%;
@@ -444,7 +484,7 @@
         .map-back {
             position: absolute;
             top: calc(12px + var(--safe-top));
-            left: 74px;
+            left: 12px;
             z-index: 600;
             width: 44px;
             height: 44px;
@@ -841,9 +881,6 @@
         <!-- VIAGEM (estilo 99 / Uber) -->
         <div id="tela-mapa" class="screen">
             <div class="map-area-99">
-                <aside id="enderecos-rail" class="enderecos-rail" aria-label="Endereços prontos">
-                    <span class="enderecos-rail-label">Destinos</span>
-                </aside>
                 <button type="button" class="map-back" onclick="voltarDoMapa()" aria-label="Voltar">←</button>
                 <button type="button" id="btn-ver-rota" class="map-chip-btn" style="display:none" onclick="alternarModoMapa()">Trajeto</button>
                 <button type="button" id="btn-minha-posicao" class="map-locate-btn" onclick="centralizarNaMinhaPosicao()" aria-label="Onde estou" title="Onde estou">
@@ -916,6 +953,24 @@
                 <button type="button" id="btn-ja-saindo" class="btn-ja-saindo" onclick="jaEstouSaindo()">Já estou saindo</button>
                 </div>
 
+                <div id="destino-picker" class="destino-picker" aria-label="Escolha o destino">
+                    <div id="destino-selecionado-box" class="destino-selecionado-box">
+                        <div class="destino-selecionado-info">
+                            <small>Destino</small>
+                            <strong id="destino-selecionado-nome">—</strong>
+                            <span id="destino-selecionado-end"></span>
+                        </div>
+                        <button type="button" class="destino-chip trocar" onclick="trocarDestino()">Trocar</button>
+                    </div>
+                    <div id="destino-picker-aberto" class="destino-picker-aberto">
+                        <label class="destino-picker-label" for="destino-select">Escolha o destino</label>
+                        <select id="destino-select" class="destino-select" onchange="onChangeDestinoSelect(this.value)">
+                            <option value="">Selecione...</option>
+                        </select>
+                        <div id="destino-chips" class="destino-chips"></div>
+                    </div>
+                </div>
+
                 <div class="sheet-cta">
                     <div class="sheet-km-block">
                         <div class="sheet-km-big">
@@ -957,7 +1012,7 @@
             { id: "MONTANA", nome: "MONTANA", foto: "https://i.ibb.co/Lht7bLY1/montanta.jpg" }
         ];
 
-        /** Unidades L.A. no mapa — edite lat/lng ou cadastre em Firebase em /unidades */
+        /** Unidades L.A. — destinos pré-definidos: paradaRota=true aparece no seletor; edite aqui ou em Firebase /unidades */
         const UNIDADES_LA = [
             {
                 id: 'moema',
@@ -1023,16 +1078,19 @@
         }
 
         function mostrarAppLogado() {
-            document.getElementById('tela-login').classList.remove('active');
-            document.getElementById('app-content').style.display = 'block';
-            showScreen('tela-motorista');
-            mudar(0);
-            verificarViagemPendente();
+            return laValidarPapel([LA_PAPEIS.MOTORISTA, LA_PAPEIS.ADMIN]).then(function () {
+                document.getElementById('tela-login').classList.remove('active');
+                document.getElementById('app-content').style.display = 'block';
+                showScreen('tela-motorista');
+                mudar(0);
+                verificarViagemPendente();
+            });
         }
 
-        function mostrarTelaLogin() {
+        function mostrarTelaLogin(err) {
             document.getElementById('tela-login').classList.add('active');
             document.getElementById('app-content').style.display = 'none';
+            if (err && err.code) alert(laMensagemErroAuth(err));
         }
 
         async function validarLogin() {
@@ -1218,9 +1276,7 @@
                     destino: data.destino || '—', destinoId: data.destinoId || null,
                     motivoCorrida: data.motivoCorrida || '—'
                 };
-                await db.ref('vehicles/' + data.carId + '/status').set("DISPONÍVEL");
-                await db.ref('vehicles/' + data.carId + '/odometer').transaction(c => (c || 0) + data.km);
-                db.ref('trips').push(trip);
+                await laPersistirViagemFinal(data.carId, data.km, trip);
                 localStorage.removeItem(TRIP_BACKUP_KEY);
                 alert("Viagem recuperada e salva!");
             } catch (e) { alert("Erro ao salvar. Tente novamente."); }
@@ -1370,40 +1426,74 @@
             if (img) img.src = fleet[idx].foto;
         }
 
-        function renderizarBarraEnderecos() {
-            const rail = document.getElementById('enderecos-rail');
-            if (!rail) return;
+        function renderizarPickerDestino() {
+            const picker = document.getElementById('destino-picker');
+            const select = document.getElementById('destino-select');
+            const chips = document.getElementById('destino-chips');
+            const nomeEl = document.getElementById('destino-selecionado-nome');
+            const endEl = document.getElementById('destino-selecionado-end');
+            if (!picker) return;
             const selId = destinoSelecionado ? destinoSelecionado.id : '';
             const dis = running ? ' disabled' : '';
 
             if (destinoSelecionado && !running) {
+                picker.classList.add('tem-selecionado');
                 const nome = destinoSelecionado.nomeCurto || destinoSelecionado.nome;
-                const end = (destinoSelecionado.endereco || '').replace(/"/g, '&quot;');
-                rail.innerHTML =
-                    '<span class="enderecos-rail-label">Destino</span>' +
-                    '<button type="button" class="endereco-rail-btn on"' + dis + ' title="' + end + '">' + nome + '</button>' +
-                    '<button type="button" class="endereco-rail-btn trocar"' + dis + ' onclick="trocarDestino()">Trocar</button>';
+                if (nomeEl) nomeEl.textContent = nome;
+                if (endEl) {
+                    if (destinoSelecionado.id === 'outros') endEl.textContent = 'Rastreio livre — sem destino fixo';
+                    else if (destinoSelecionado.endereco) endEl.textContent = destinoSelecionado.endereco;
+                    else endEl.textContent = '';
+                }
                 atualizarLabelDestinoSheet();
                 return;
             }
 
+            picker.classList.remove('tem-selecionado');
             const destinos = unidadesLista.filter(u => u.paradaRota);
-            const botoes = destinos.map(d => {
-                const nome = d.nomeCurto || d.nome;
-                const on = selId === d.id ? ' on' : '';
-                const end = (d.endereco || nome).replace(/"/g, '&quot;');
-                return '<button type="button" class="endereco-rail-btn' + on + '"' + dis + ' data-id="' + d.id + '" onclick="selecionarDestino(\'' + d.id + '\')" title="' + end + '">' + nome + '</button>';
-            }).join('') +
-                '<button type="button" class="endereco-rail-btn sede' + (selId === 'sede' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'sede\')" title="Voltar para L.A. Moema">Sede</button>' +
-                '<button type="button" class="endereco-rail-btn outros' + (selId === 'outros' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'outros\')" title="Rastreio sem destino fixo">Outros</button>';
-            rail.innerHTML = '<span class="enderecos-rail-label">Destinos</span>' + botoes;
+
+            if (select) {
+                let opts = '<option value="">Selecione o destino...</option>';
+                destinos.forEach(d => {
+                    const nome = d.nomeCurto || d.nome;
+                    opts += '<option value="' + d.id + '"' + (selId === d.id ? ' selected' : '') + '>' + nome + '</option>';
+                });
+                opts += '<option value="sede"' + (selId === 'sede' ? ' selected' : '') + '>Sede (Moema)</option>';
+                opts += '<option value="outros"' + (selId === 'outros' ? ' selected' : '') + '>Outros — rastreio livre</option>';
+                select.innerHTML = opts;
+                select.disabled = !!running;
+            }
+
+            if (chips) {
+                const chipHtml = destinos.map(d => {
+                    const nome = d.nomeCurto || d.nome;
+                    const on = selId === d.id ? ' on' : '';
+                    const end = (d.endereco || nome).replace(/"/g, '&quot;');
+                    return '<button type="button" class="destino-chip' + on + '"' + dis + ' onclick="selecionarDestino(\'' + d.id + '\')" title="' + end + '">' + nome + '</button>';
+                }).join('') +
+                    '<button type="button" class="destino-chip sede' + (selId === 'sede' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'sede\')" title="Voltar para L.A. Moema">Sede</button>' +
+                    '<button type="button" class="destino-chip outros' + (selId === 'outros' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'outros\')" title="Rastreio sem destino fixo">Outros</button>';
+                chips.innerHTML = chipHtml;
+            }
             atualizarLabelDestinoSheet();
+        }
+
+        /** @deprecated alias */
+        function renderizarBarraEnderecos() {
+            renderizarPickerDestino();
+        }
+
+        function onChangeDestinoSelect(val) {
+            if (!val || running) return;
+            selecionarDestino(val);
         }
 
         function trocarDestino() {
             if (running) return;
             destinoSelecionado = null;
-            renderizarBarraEnderecos();
+            const select = document.getElementById('destino-select');
+            if (select) select.value = '';
+            renderizarPickerDestino();
             atualizarBarraViagem();
             renderizarUnidadesNoMapa();
             limparPreviewRota();
@@ -2032,7 +2122,7 @@
          * Separar validação em função ajuda a estudar e testar regra de negócio isoladamente.
          */
         function validarInicioCorrida() {
-            if (!destinoSelecionado) return 'Selecione um destino na barra lateral (ou "Outros").';
+            if (!destinoSelecionado) return 'Escolha um destino acima (ou "Outros").';
             return '';
         }
 
@@ -2246,9 +2336,7 @@
         }
 
         async function persistirTripFinal(carId, kmFinal, trip) {
-            await db.ref('vehicles/' + carId + '/status').set("DISPONÍVEL");
-            await db.ref('vehicles/' + carId + '/odometer').transaction(c => (c || 0) + kmFinal);
-            await db.ref('trips').push(trip);
+            await laPersistirViagemFinal(carId, kmFinal, trip);
         }
 
         function restaurarBotaoFinalizar(btn) {

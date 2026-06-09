@@ -413,16 +413,19 @@
         let paginaAtual = 1;
 
         function mostrarPainelLogado() {
-            document.getElementById('painel-login').style.display = 'none';
-            const content = document.getElementById('painel-content');
-            content.style.display = 'flex';
-            iniciarEscutaTrips();
+            return laValidarPapel([LA_PAPEIS.GESTOR, LA_PAPEIS.ADMIN]).then(function () {
+                document.getElementById('painel-login').style.display = 'none';
+                const content = document.getElementById('painel-content');
+                content.style.display = 'flex';
+                iniciarEscutaTrips();
+            });
         }
 
-        function mostrarPainelLogin() {
+        function mostrarPainelLogin(err) {
             document.getElementById('painel-login').style.display = 'flex';
             document.getElementById('painel-content').style.display = 'none';
             pararEscutaTrips();
+            if (err && err.code) alert(laMensagemErroAuth(err));
         }
 
         laObservarAuth(mostrarPainelLogado, mostrarPainelLogin);
