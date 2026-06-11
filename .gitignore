@@ -3,3 +3,12 @@ la-config.js
 .env
 .env.*
 *.local.js
+
+# Capacitor / Android — não versionar build nem deps
+la-controle-capacitor/node_modules/
+la-controle-capacitor/android/.gradle/
+la-controle-capacitor/android/build/
+la-controle-capacitor/android/app/build/
+la-controle-capacitor/android/.idea/
+la-controle-capacitor/android/local.properties
+la-controle-capacitor/www/

@@ -79,8 +79,24 @@ async function laValidarPapel(papeisPermitidos) {
     return papel;
 }
 
+/** Salva alerta de problema no veículo (motorista). Retorna a chave gerada. */
+async function laSalvarProblemaVeiculo(dados) {
+    const ref = laDb().ref('vehicle_issues').push();
+    const issueId = ref.key;
+    const payload = Object.assign({}, dados, {
+        status: 'aberto',
+        date: new Date().toLocaleString('pt-BR')
+    });
+    await ref.set(payload);
+    if (typeof laEnviarEventoPlataforma === 'function') {
+        laEnviarEventoPlataforma('alerta_veiculo', Object.assign({ issueId: issueId }, payload));
+    }
+    return issueId;
+}
+
 /**
  * Salva viagem final de forma atômica: status + odômetro + trip num único update.
+ * Retorna { tripKey, trip }.
  */
 async function laPersistirViagemFinal(carId, kmFinal, trip) {
     const tripKey = laDb().ref('trips').push().key;
@@ -91,6 +107,14 @@ async function laPersistirViagemFinal(carId, kmFinal, trip) {
     updates['vehicles/' + carId + '/odometer'] = odoAtual + kmFinal;
     updates['trips/' + tripKey] = trip;
     await laDb().ref().update(updates);
+    if (typeof laEnviarEventoPlataforma === 'function') {
+        laEnviarEventoPlataforma('viagem_finalizada', {
+            tripId: tripKey,
+            vehicleId: carId,
+            trip: trip
+        });
+    }
+    return { tripKey: tripKey, trip: trip };
 }
 
 /** Login com e-mail e senha digitados na tela (Firebase Authentication). */

@@ -1,0 +1,6 @@
+node_modules/
+www/la-config.js
+.idea/
+*.iml
+local.properties
+.DS_Store

@@ -30,6 +30,24 @@
     "unidades": {
       ".read": "auth != null && (isGestor() || isMotorista())",
       ".write": "isGestor()"
+    },
+    "motoristas": {
+      ".read": "auth != null && (isGestor() || isMotorista())",
+      ".write": "isGestor()"
+    },
+    "fleet": {
+      ".read": "auth != null && (isGestor() || isMotorista())",
+      ".write": "isGestor()"
+    },
+    "vehicle_issues": {
+      ".read": "auth != null && (isGestor() || isMotorista())",
+      "$issueId": {
+        ".read": "auth != null && (isGestor() || isMotorista())",
+        ".write": "isMotorista() && !data.exists()",
+        "status": {
+          ".write": "isGestor()"
+        }
+      }
     }
   },
   "functions": {

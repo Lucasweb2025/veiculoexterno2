@@ -199,6 +199,48 @@
             color: var(--text-muted);
             border: 2px solid var(--gray-border);
         }
+        .btn-filtro-exportar {
+            background: var(--black);
+            color: var(--yellow);
+            border: 2px solid var(--black);
+        }
+
+        .lista-alertas { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+        .issue-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 14px 16px;
+            border: 1px solid var(--gray-border);
+            border-left: 4px solid #e65100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .issue-card.critico { border-left-color: var(--danger); background: #fff8f8; }
+        .issue-card.resolvido { opacity: 0.65; border-left-color: #9e9e9e; }
+        .issue-car { font-size: 0.95rem; font-weight: 800; }
+        .issue-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+        .issue-meta b { color: var(--black); }
+        .issue-badge {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .issue-badge.critico { background: #ffebee; color: var(--danger); }
+        .btn-issue-resolver {
+            margin-top: 10px;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 10px;
+            background: var(--yellow);
+            font-size: 0.72rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
 
         .lista-viagens { display: flex; flex-direction: column; gap: 10px; }
         .trip-card {
@@ -354,6 +396,9 @@
             </header>
 
             <main class="main-painel">
+                <p class="section-title">Alertas de veículo</p>
+                <div id="lista-alertas" class="lista-alertas"></div>
+
                 <p class="section-title">Histórico de movimentação</p>
 
                 <div class="card">
@@ -383,6 +428,7 @@
                     <div class="filtro-btns">
                         <button type="button" class="btn-filtro btn-filtro-aplicar" onclick="aplicarFiltros()">Filtrar</button>
                         <button type="button" class="btn-filtro btn-filtro-limpar" onclick="limparFiltros()">Limpar</button>
+                        <button type="button" class="btn-filtro btn-filtro-exportar" onclick="exportarViagensCsv()">Exportar CSV</button>
                     </div>
                 </div>
 
@@ -407,7 +453,16 @@
         const tripCache = {};
         const tripNames = {};
         let handlerTrips = null;
+        let handlerIssues = null;
         let tripsAll = {};
+        let issuesAll = {};
+        const ISSUE_TIPO_LABEL = {
+            freio: 'Freio', barulho: 'Barulho', pneu: 'Pneu',
+            luz: 'Luz no painel', vazamento: 'Vazamento', outro: 'Outro'
+        };
+        const ISSUE_URGENCIA_LABEL = {
+            leve: 'Leve', atencao: 'Atenção', nao_usar: 'Não usar'
+        };
         let filtrosAtivos = { motorista: 'todos', veiculo: 'todos', destino: 'todos', dataInicio: '', dataFim: '' };
         const ITENS_POR_PAGINA = 10;
         let paginaAtual = 1;
@@ -418,6 +473,7 @@
                 const content = document.getElementById('painel-content');
                 content.style.display = 'flex';
                 iniciarEscutaTrips();
+                iniciarEscutaIssues();
             });
         }
 
@@ -425,6 +481,7 @@
             document.getElementById('painel-login').style.display = 'flex';
             document.getElementById('painel-content').style.display = 'none';
             pararEscutaTrips();
+            pararEscutaIssues();
             if (err && err.code) alert(laMensagemErroAuth(err));
         }
 
@@ -450,6 +507,7 @@
 
         async function logoutPainel() {
             pararEscutaTrips();
+            pararEscutaIssues();
             await laSair();
             location.reload();
         }
@@ -594,6 +652,75 @@
             document.querySelector('.main-painel').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
+        function formatarTiposIssue(tipos) {
+            if (!tipos || !tipos.length) return 'Problema';
+            return tipos.map(t => ISSUE_TIPO_LABEL[t] || t).join(', ');
+        }
+
+        function renderizarListaAlertas() {
+            const container = document.getElementById('lista-alertas');
+            if (!container) return;
+            const entries = Object.entries(issuesAll)
+                .sort((a, b) => {
+                    const sa = (a[1].status === 'resolvido') ? 1 : 0;
+                    const sb = (b[1].status === 'resolvido') ? 1 : 0;
+                    if (sa !== sb) return sa - sb;
+                    return (b[1].date || '').localeCompare(a[1].date || '');
+                });
+            if (!entries.length) {
+                container.innerHTML = '<p class="empty-msg">Nenhum alerta de veículo.</p>';
+                return;
+            }
+            container.innerHTML = '';
+            entries.forEach(([id, issue]) => {
+                const critico = issue.urgencia === 'nao_usar';
+                const resolvido = issue.status === 'resolvido';
+                const tipos = esc(formatarTiposIssue(issue.tipos));
+                const urg = esc(ISSUE_URGENCIA_LABEL[issue.urgencia] || issue.urgencia || '—');
+                const car = esc(issue.vehicleName || issue.vehicleId || '—');
+                const driver = esc(issue.driver || '—');
+                const desc = issue.descricao ? esc(issue.descricao) : '';
+                const data = esc(issue.date || '—');
+                const status = esc(issue.status || 'aberto');
+                const btn = resolvido ? '' :
+                    '<button type="button" class="btn-issue-resolver" onclick="marcarIssueResolvido(\'' + id + '\')">Marcar resolvido</button>';
+                container.innerHTML += `
+                    <div class="issue-card${critico ? ' critico' : ''}${resolvido ? ' resolvido' : ''}">
+                        <div class="issue-car">${car}</div>
+                        <div class="issue-meta">Motorista: <b>${driver}</b></div>
+                        <div class="issue-meta">Problema: <b>${tipos}</b></div>
+                        ${desc ? '<div class="issue-meta">' + desc + '</div>' : ''}
+                        <div class="issue-meta">${data}</div>
+                        <span class="issue-badge${critico ? ' critico' : ''}">${urg} · ${status}</span>
+                        ${btn}
+                    </div>`;
+            });
+        }
+
+        async function marcarIssueResolvido(issueId) {
+            if (!issueId) return;
+            try {
+                await db.ref('vehicle_issues/' + issueId + '/status').set('resolvido');
+            } catch (e) {
+                alert('Não foi possível atualizar. Tente de novo.');
+            }
+        }
+
+        function iniciarEscutaIssues() {
+            if (handlerIssues) return;
+            handlerIssues = function (snapshot) {
+                issuesAll = snapshot.val() || {};
+                renderizarListaAlertas();
+            };
+            db.ref('vehicle_issues').on('value', handlerIssues);
+        }
+
+        function pararEscutaIssues() {
+            if (!handlerIssues) return;
+            db.ref('vehicle_issues').off('value', handlerIssues);
+            handlerIssues = null;
+        }
+
         function renderizarListaViagens() {
             const container = document.getElementById('lista-viagens');
             container.innerHTML = '';
@@ -673,6 +800,40 @@
             filtrosAtivos = { motorista: 'todos', veiculo: 'todos', destino: 'todos', dataInicio: '', dataFim: '' };
             paginaAtual = 1;
             renderizarListaViagens();
+        }
+
+        function csvCelula(val) {
+            const s = val == null ? '' : String(val);
+            return '"' + s.replace(/"/g, '""') + '"';
+        }
+
+        function exportarViagensCsv() {
+            const entries = obterViagensFiltradas();
+            if (!entries.length) return alert('Nenhuma viagem para exportar com os filtros atuais.');
+            const cabecalho = ['id', 'veiculo', 'motorista', 'destino', 'destino_id', 'motivo', 'km', 'duracao', 'data', 'pontos_rota'];
+            const linhas = [cabecalho.join(';')];
+            entries.forEach(function ([id, trip]) {
+                linhas.push([
+                    csvCelula(id),
+                    csvCelula(trip.car),
+                    csvCelula(trip.driver),
+                    csvCelula(trip.destino),
+                    csvCelula(trip.destinoId),
+                    csvCelula(trip.motivoCorrida),
+                    csvCelula(parseFloat(trip.km || 0).toFixed(2)),
+                    csvCelula(trip.time),
+                    csvCelula(trip.date),
+                    csvCelula((trip.path && trip.path.length) || 0)
+                ].join(';'));
+            });
+            const blob = new Blob(['\ufeff' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const hoje = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = 'la-controle-viagens-' + hoje + '.csv';
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         function iniciarEscutaTrips() {

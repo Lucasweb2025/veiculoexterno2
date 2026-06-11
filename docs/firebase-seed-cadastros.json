@@ -1,0 +1,22 @@
+{
+  "motoristas": {
+    "marco": { "nome": "Marco", "ativo": true },
+    "fabio": { "nome": "Fabio", "ativo": true }
+  },
+  "fleet": {
+    "UNO": {
+      "nome": "UNO VIVACE",
+      "foto": "https://i.ibb.co/4Lq2XH7/UNO.jpg",
+      "ativo": true
+    },
+    "MONTANA": {
+      "nome": "MONTANA",
+      "foto": "https://i.ibb.co/Lht7bLY1/montanta.jpg",
+      "ativo": true
+    }
+  },
+  "vehicles": {
+    "UNO": { "status": "DISPONÍVEL", "odometer": 0 },
+    "MONTANA": { "status": "DISPONÍVEL", "odometer": 0 }
+  }
+}
