@@ -48,6 +48,16 @@
           ".write": "isGestor()"
         }
       }
+    },
+    "vehicle_maintenance": {
+      ".read": "auth != null && (isGestor() || isMotorista())",
+      "$vehicleId": {
+        ".read": "auth != null && (isGestor() || isMotorista())",
+        "$entryId": {
+          ".read": "auth != null && (isGestor() || isMotorista())",
+          ".write": "isGestor() || (isMotorista() && !data.exists())"
+        }
+      }
     }
   },
   "functions": {

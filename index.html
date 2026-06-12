@@ -311,12 +311,32 @@
             display: none;
         }
         #tela-mapa:not(.corrida-ativa) .bottom-sheet {
-            max-height: none;
-            padding-top: 0;
+            max-height: 62vh;
+            padding-top: 4px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #tela-mapa:not(.corrida-ativa) .pre-corrida-scroll {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        #tela-mapa:not(.corrida-ativa) .sheet-cta {
+            flex-shrink: 0;
+            background: var(--sheet);
         }
         #tela-mapa:not(.corrida-ativa) .map-area-99 {
             flex: 1;
-            min-height: 52vh;
+            min-height: 38vh;
+        }
+        #tela-mapa:not(.corrida-ativa).painel-alto .map-area-99 {
+            min-height: 28vh;
+            max-height: 36vh;
+            flex: 0 0 auto;
         }
         #tela-mapa:not(.corrida-ativa) .sheet-cta {
             border-top: none;
@@ -352,11 +372,53 @@
         }
         #tela-mapa #map { width: 100%; height: 100%; }
         .leaflet-container { background: var(--map-bg); font-family: inherit; }
+        /* Resumo antes de iniciar (motorista + veículo) */
+        .pre-corrida-resumo {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: var(--gray-bg);
+            border-top: 1px solid var(--gray-border);
+        }
+        #tela-mapa:not(.corrida-ativa) .pre-corrida-resumo { display: flex; }
+        .pre-corrida-thumb {
+            width: 48px;
+            height: 34px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #e0e0e0;
+            flex-shrink: 0;
+        }
+        .pre-corrida-texto {
+            flex: 1;
+            min-width: 0;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--black);
+            line-height: 1.3;
+        }
+        .pre-corrida-texto small {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #888;
+            margin-top: 2px;
+        }
         /* Seletor de destino — embaixo, acima de Iniciar corrida */
         .destino-picker {
             padding: 12px 16px 10px;
             background: var(--white);
             border-top: 1px solid var(--gray-border);
+        }
+        .painel-passo {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
         }
         .destino-picker-label {
             display: block;
@@ -367,60 +429,117 @@
             letter-spacing: 0.06em;
             margin-bottom: 8px;
         }
-        .destino-select {
-            width: 100%;
-            padding: 14px 12px;
+        .destino-chips {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .destino-chip {
+            padding: 12px 10px;
             border: 2px solid var(--gray-border);
             border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
             background: var(--white);
-            color: var(--black);
-            margin-bottom: 10px;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23333' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 14px center;
-        }
-        .destino-select:disabled { opacity: 0.5; }
-        .destino-chips {
-            display: flex;
-            flex-wrap: nowrap;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-        .destino-chips::-webkit-scrollbar { display: none; }
-        .destino-chip {
-            flex-shrink: 0;
-            padding: 10px 14px;
-            border: none;
-            border-radius: 999px;
-            background: var(--gray-bg);
             color: var(--black);
             font-size: 0.82rem;
             font-weight: 700;
             cursor: pointer;
-            white-space: nowrap;
-            transition: background 0.15s;
+            text-align: center;
+            line-height: 1.25;
+            transition: background 0.15s, border-color 0.15s;
         }
         .destino-chip:active { opacity: 0.85; }
         .destino-chip.on {
             background: var(--yellow);
-            box-shadow: inset 0 0 0 2px var(--black);
+            border-color: var(--black);
         }
-        .destino-chip.sede { background: #fff8dc; }
+        .destino-chip.sede { background: #fffbea; }
         .destino-chip.outros {
             font-weight: 600;
-            color: #666;
+            color: #555;
         }
         .destino-chip.outros.on {
             background: var(--yellow);
             color: var(--black);
             font-weight: 800;
+            border-color: var(--black);
         }
+        .destino-recentes { margin-bottom: 10px; }
+        .destino-recentes-label {
+            display: block;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #999;
+            margin-bottom: 6px;
+        }
+        .destino-recentes-chips {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+        }
+        .destino-recentes-chips::-webkit-scrollbar { display: none; }
+        .destino-recente-chip {
+            flex-shrink: 0;
+            padding: 8px 12px;
+            border: 2px solid var(--gray-border);
+            border-radius: 999px;
+            background: var(--white);
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .destino-recente-chip:active { background: var(--gray-bg); }
+        .destino-outros-form {
+            margin-top: 10px;
+            padding: 12px;
+            background: var(--gray-bg);
+            border-radius: 12px;
+        }
+        .destino-outros-form label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--black);
+            margin-bottom: 8px;
+        }
+        .destino-outros-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--gray-border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+        .destino-outros-input:focus {
+            outline: none;
+            border-color: var(--yellow);
+        }
+        .btn-buscar-outros {
+            width: 100%;
+            margin-top: 8px;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: var(--yellow);
+            color: var(--black);
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .btn-buscar-outros:disabled { opacity: 0.6; cursor: wait; }
+        .destino-outros-erro {
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: var(--danger);
+            line-height: 1.35;
+        }
+        .destino-picker.modo-outros .destino-selecionado-box { display: none !important; }
         .destino-chip:disabled { opacity: 0.45; pointer-events: none; }
         .destino-chip.trocar {
             background: var(--white);
@@ -467,7 +586,7 @@
         .destino-picker.tem-selecionado .destino-picker-aberto { display: none; }
         .destino-picker:not(.tem-selecionado) .destino-selecionado-box { display: none; }
         #tela-mapa:not(.corrida-ativa) .map-locate-btn {
-            bottom: calc(300px + var(--safe-bottom));
+            bottom: calc(340px + var(--safe-bottom));
         }
         /* Check veículo — acima de Iniciar corrida */
         .veiculo-check {
@@ -598,20 +717,6 @@
             line-height: 1.35;
         }
         .veiculo-check.bloqueado .veiculo-bloqueio-msg { display: block; }
-        .btn-ja-saindo {
-            width: 100%;
-            padding: 16px;
-            margin-bottom: 10px;
-            border: 2px solid var(--black);
-            border-radius: 12px;
-            background: var(--white);
-            color: var(--black);
-            font-size: 1rem;
-            font-weight: 800;
-            cursor: pointer;
-        }
-        .btn-ja-saindo:active { background: var(--gray-bg); }
-        #tela-mapa.corrida-ativa .btn-ja-saindo { display: none; }
         .map-back {
             position: absolute;
             top: calc(12px + var(--safe-top));
@@ -921,6 +1026,90 @@
             box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.55);
             transform: scale(1.15);
         }
+        /* Aba Revisão — tela do veículo */
+        .veiculo-tabs {
+            display: flex;
+            width: 100%;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .veiculo-tab {
+            flex: 1;
+            padding: 12px 8px;
+            border: 2px solid var(--gray-border);
+            border-radius: 12px;
+            background: var(--white);
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+            color: #666;
+        }
+        .veiculo-tab.on {
+            background: var(--yellow);
+            border-color: var(--black);
+            color: var(--black);
+        }
+        .revisao-lista {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+            max-height: 42vh;
+            overflow-y: auto;
+        }
+        .revisao-item {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 12px 14px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--gray-border);
+        }
+        .revisao-item.alerta { border-left-color: #e65100; }
+        .revisao-item.manutencao { border-left-color: #2e7d32; }
+        .revisao-item-data { font-size: 0.72rem; color: #888; font-weight: 700; }
+        .revisao-item-titulo { font-size: 0.9rem; font-weight: 800; margin: 4px 0 2px; }
+        .revisao-item-meta { font-size: 0.75rem; color: #666; line-height: 1.35; }
+        .revisao-form {
+            width: 100%;
+            background: var(--white);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .revisao-form label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #888;
+            text-transform: uppercase;
+            margin: 10px 0 6px;
+        }
+        .revisao-form label:first-child { margin-top: 0; }
+        .revisao-form .input { margin-bottom: 0; text-align: left; }
+        .btn-revisao-add {
+            width: 100%;
+            padding: 14px;
+            border: 2px dashed var(--gray-border);
+            border-radius: 12px;
+            background: var(--white);
+            font-size: 0.88rem;
+            font-weight: 800;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        .btn-revisao-salvar {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: var(--yellow);
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body onload="verificarSessao()">
@@ -993,16 +1182,41 @@
                     <div class="step on">Veículo</div>
                     <div class="step">Viagem</div>
                 </div>
-                <div class="card car-box">
-                    <div id="car-render"></div>
-                    <h2 id="car-name" class="car-name">---</h2>
-                    <div id="car-odo" class="odo">Odômetro: 0,00 km</div>
+                <div class="veiculo-tabs">
+                    <button type="button" id="tab-veiculo-carro" class="veiculo-tab on" onclick="mostrarAbaVeiculo('carro')">Veículo</button>
+                    <button type="button" id="tab-veiculo-revisao" class="veiculo-tab" onclick="mostrarAbaVeiculo('revisao')">Revisão</button>
                 </div>
-                <div class="car-nav">
-                    <button type="button" class="nav-arrow" onclick="mudar(-1)">❮</button>
-                    <button type="button" class="nav-arrow" onclick="mudar(1)">❯</button>
+                <div id="aba-veiculo-carro" style="width:100%;">
+                    <div class="card car-box">
+                        <div id="car-render"></div>
+                        <h2 id="car-name" class="car-name">---</h2>
+                        <div id="car-odo" class="odo">Odômetro: 0,00 km</div>
+                    </div>
+                    <div class="car-nav">
+                        <button type="button" class="nav-arrow" onclick="mudar(-1)">❮</button>
+                        <button type="button" class="nav-arrow" onclick="mudar(1)">❯</button>
+                    </div>
+                    <button class="btn btn-yellow" style="margin-top:8px;width:100%;" onclick="initOperation()">Ir para o mapa</button>
                 </div>
-                <button class="btn btn-yellow" style="margin-top:8px;" onclick="initOperation()">Ir para o mapa</button>
+                <div id="aba-veiculo-revisao" style="width:100%;display:none;">
+                    <p class="painel-passo" style="margin-bottom:10px;">Histórico · <span id="revisao-veiculo-nome">—</span></p>
+                    <div id="revisao-lista" class="revisao-lista"></div>
+                    <button type="button" class="btn-revisao-add" onclick="toggleFormManutencao()">+ Registrar manutenção</button>
+                    <div id="revisao-form" class="revisao-form" hidden>
+                        <label for="manut-data">Data</label>
+                        <input type="date" id="manut-data" class="input">
+                        <label>Tipo</label>
+                        <div id="manut-tipos" class="veiculo-tipos"></div>
+                        <label for="manut-descricao">O que foi feito?</label>
+                        <textarea id="manut-descricao" class="veiculo-problema-texto" maxlength="300" placeholder="Ex.: Troca de pastilhas de freio"></textarea>
+                        <label for="manut-km">Km (opcional)</label>
+                        <input type="number" id="manut-km" class="input" min="0" step="1" placeholder="Odômetro na manutenção">
+                        <label for="manut-oficina">Oficina (opcional)</label>
+                        <input type="text" id="manut-oficina" class="input" maxlength="80" placeholder="Nome da oficina">
+                        <button type="button" class="btn-revisao-salvar" onclick="salvarManutencaoApp()">Salvar registro</button>
+                    </div>
+                    <button class="btn btn-yellow" style="margin-top:8px;width:100%;" onclick="initOperation()">Ir para o mapa</button>
+                </div>
                 <button type="button" class="btn-ghost" onclick="voltarParaMotorista()">Voltar</button>
             </div>
         </div>
@@ -1079,29 +1293,46 @@
                     <span class="sheet-navegar-hint">Grátis · abre o app de mapas do celular</span>
                 </div>
 
-                <button type="button" id="btn-ja-saindo" class="btn-ja-saindo" onclick="jaEstouSaindo()">Já estou saindo</button>
+                </div>
+
+                <div id="pre-corrida-scroll" class="pre-corrida-scroll">
+                <div id="pre-corrida-resumo" class="pre-corrida-resumo" aria-hidden="true">
+                    <img id="pre-corrida-thumb" class="pre-corrida-thumb" src="" alt="">
+                    <div class="pre-corrida-texto">
+                        <span id="pre-corrida-linha1">—</span>
+                        <small id="pre-corrida-linha2">Escolha o destino para iniciar</small>
+                    </div>
                 </div>
 
                 <div id="destino-picker" class="destino-picker" aria-label="Escolha o destino">
                     <div id="destino-selecionado-box" class="destino-selecionado-box">
                         <div class="destino-selecionado-info">
-                            <small>Destino</small>
+                            <small>Destino escolhido</small>
                             <strong id="destino-selecionado-nome">—</strong>
                             <span id="destino-selecionado-end"></span>
                         </div>
                         <button type="button" class="destino-chip trocar" onclick="trocarDestino()">Trocar</button>
                     </div>
                     <div id="destino-picker-aberto" class="destino-picker-aberto">
-                        <label class="destino-picker-label" for="destino-select">Escolha o destino</label>
-                        <select id="destino-select" class="destino-select" onchange="onChangeDestinoSelect(this.value)">
-                            <option value="">Selecione...</option>
-                        </select>
+                        <span class="painel-passo">1 · Para onde vai?</span>
+                        <div id="destino-recentes" class="destino-recentes" hidden>
+                            <span class="destino-recentes-label">Recentes</span>
+                            <div id="destino-recentes-chips" class="destino-recentes-chips"></div>
+                        </div>
                         <div id="destino-chips" class="destino-chips"></div>
+                        <div id="destino-outros-form" class="destino-outros-form" hidden>
+                            <label for="destino-outros-input">Qual endereço você deseja ir?</label>
+                            <input type="text" id="destino-outros-input" class="destino-outros-input" maxlength="120"
+                                placeholder="Ex.: Av. Paulista, 1000 — Bela Vista"
+                                onkeypress="if(event.key==='Enter') buscarEnderecoOutros()">
+                            <button type="button" id="btn-buscar-outros" class="btn-buscar-outros" onclick="buscarEnderecoOutros()">Buscar no mapa</button>
+                            <p id="destino-outros-erro" class="destino-outros-erro" aria-live="polite"></p>
+                        </div>
                     </div>
                 </div>
 
                 <div id="veiculo-check" class="veiculo-check" aria-label="Condição do veículo">
-                    <span class="destino-picker-label">Como está o veículo?</span>
+                    <span class="painel-passo">2 · Veículo está ok?</span>
                     <div id="veiculo-check-botoes" class="veiculo-check-botoes">
                         <button type="button" id="btn-veiculo-ok" class="veiculo-btn ok" onclick="marcarVeiculoOk()">OK</button>
                         <button type="button" id="btn-veiculo-problema" class="veiculo-btn problema" onclick="abrirFormProblemaVeiculo()">Reportar problema</button>
@@ -1130,6 +1361,7 @@
                         Veículo marcado como não utilizável. Avise o gestor antes de usar este carro.
                     </div>
                 </div>
+                </div>
 
                 <div class="sheet-cta">
                     <div class="sheet-km-block">
@@ -1155,6 +1387,8 @@
         const db = laDb();
         const TRIP_BACKUP_KEY = 'la_trip_backup_v34';
         const LAST_DEST_KEY = 'la_last_dest_id_v1';
+        const RECENT_DESTS_KEY = 'la_recent_dests_v1';
+        const RECENT_DESTS_MAX = 5;
         /** Chave ORS em la-config.js (gitignore) — não commitar no GitHub. */
         const ORS_KEY = (window.LA_CONFIG && window.LA_CONFIG.ORS_KEY) || '';
         const ORS_DIRECTIONS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
@@ -1228,6 +1462,8 @@
         let linhaSaidaBase = null;
         let linhaDestino = null;
         let destinoSelecionado = null;
+        let modoOutrosAberto = false;
+        let marcadorDestinoCustom = null;
         let unidadesLista = UNIDADES_LA.slice();
         let snapAoVivoEmCurso = false;
         let ultimoSnapAoVivo = 0;
@@ -1247,6 +1483,23 @@
             atencao: 'Atenção',
             nao_usar: 'Não usar'
         };
+        const MANUTENCAO_TIPOS = [
+            { id: 'revisao', label: 'Revisão geral' },
+            { id: 'freio', label: 'Freio' },
+            { id: 'oleo', label: 'Óleo' },
+            { id: 'pneu', label: 'Pneu' },
+            { id: 'outro', label: 'Outro' }
+        ];
+        const MANUTENCAO_TIPO_LABEL = {
+            revisao: 'Revisão geral', freio: 'Freio', oleo: 'Óleo', pneu: 'Pneu', outro: 'Outro'
+        };
+        const ISSUE_TIPO_LABEL = {
+            freio: 'Freio', barulho: 'Barulho', pneu: 'Pneu',
+            luz: 'Luz no painel', vazamento: 'Vazamento', outro: 'Outro'
+        };
+        let handlerRevisaoManut = null;
+        let handlerRevisaoIssues = null;
+        let revisaoCarIdAtual = null;
         let estadoVeiculo = null;
         let problemaVeiculoAtual = null;
 
@@ -1598,6 +1851,179 @@
                 document.getElementById('car-odo').innerText = `Odômetro: ${(s.val() || 0).toFixed(2)} km`;
             });
             atualizarHintVeiculo();
+            iniciarEscutaRevisaoVeiculo();
+        }
+
+        function mostrarAbaVeiculo(aba) {
+            const carro = document.getElementById('aba-veiculo-carro');
+            const revisao = document.getElementById('aba-veiculo-revisao');
+            const tabCarro = document.getElementById('tab-veiculo-carro');
+            const tabRevisao = document.getElementById('tab-veiculo-revisao');
+            const isRevisao = aba === 'revisao';
+            if (carro) carro.style.display = isRevisao ? 'none' : 'block';
+            if (revisao) revisao.style.display = isRevisao ? 'block' : 'none';
+            if (tabCarro) tabCarro.classList.toggle('on', !isRevisao);
+            if (tabRevisao) tabRevisao.classList.toggle('on', isRevisao);
+            if (isRevisao) iniciarEscutaRevisaoVeiculo();
+        }
+
+        function renderizarTiposManutencao() {
+            const wrap = document.getElementById('manut-tipos');
+            if (!wrap) return;
+            wrap.innerHTML = MANUTENCAO_TIPOS.map(t =>
+                '<button type="button" class="veiculo-tipo-chip" data-tipo="' + t.id + '" onclick="toggleTipoManutencao(this)">' + t.label + '</button>'
+            ).join('');
+        }
+
+        function toggleTipoManutencao(btn) {
+            document.querySelectorAll('#manut-tipos .veiculo-tipo-chip').forEach(b => b.classList.remove('on'));
+            btn.classList.add('on');
+        }
+
+        function toggleFormManutencao() {
+            const form = document.getElementById('revisao-form');
+            if (!form) return;
+            const abrir = form.hidden;
+            form.hidden = !abrir;
+            if (abrir) {
+                renderizarTiposManutencao();
+                const dataInp = document.getElementById('manut-data');
+                if (dataInp && !dataInp.value) {
+                    dataInp.value = new Date().toISOString().slice(0, 10);
+                }
+            }
+        }
+
+        function pararEscutaRevisaoVeiculo() {
+            if (handlerRevisaoManut && revisaoCarIdAtual) {
+                db.ref('vehicle_maintenance/' + revisaoCarIdAtual).off('value', handlerRevisaoManut);
+                handlerRevisaoManut = null;
+            }
+            if (handlerRevisaoIssues) {
+                db.ref('vehicle_issues').off('value', handlerRevisaoIssues);
+                handlerRevisaoIssues = null;
+            }
+            revisaoCarIdAtual = null;
+        }
+
+        let revisaoManutCache = {};
+        let revisaoIssuesCache = {};
+
+        function iniciarEscutaRevisaoVeiculo() {
+            const carId = fleet[idx] ? fleet[idx].id : null;
+            const nomeEl = document.getElementById('revisao-veiculo-nome');
+            if (nomeEl && fleet[idx]) nomeEl.textContent = fleet[idx].nome;
+            if (!carId) return;
+
+            pararEscutaRevisaoVeiculo();
+            revisaoCarIdAtual = carId;
+
+            handlerRevisaoManut = function (snap) {
+                revisaoManutCache = snap.val() || {};
+                renderizarHistoricoRevisao(carId);
+            };
+            db.ref('vehicle_maintenance/' + carId).on('value', handlerRevisaoManut);
+
+            handlerRevisaoIssues = function (snap) {
+                revisaoIssuesCache = snap.val() || {};
+                renderizarHistoricoRevisao(carId);
+            };
+            db.ref('vehicle_issues').on('value', handlerRevisaoIssues);
+        }
+
+        function formatarDataRevisao(str) {
+            if (!str) return '—';
+            if (str.includes('/')) return str.split(',')[0].trim();
+            const d = new Date(str);
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleDateString('pt-BR');
+            }
+            return str;
+        }
+
+        function renderizarHistoricoRevisao(carId) {
+            const lista = document.getElementById('revisao-lista');
+            if (!lista) return;
+            const itens = [];
+
+            Object.entries(revisaoManutCache).forEach(function ([id, m]) {
+                if (!m) return;
+                itens.push({
+                    sort: m.criadoEm || m.date || id,
+                    html: '<div class="revisao-item manutencao">' +
+                        '<div class="revisao-item-data">' + escHtml(formatarDataRevisao(m.date)) + '</div>' +
+                        '<div class="revisao-item-titulo">' + escHtml(MANUTENCAO_TIPO_LABEL[m.tipo] || m.tipo || 'Manutenção') + '</div>' +
+                        '<div class="revisao-item-meta">' + escHtml(m.descricao || '—') +
+                        (m.km ? '<br>Km: ' + escHtml(String(m.km)) : '') +
+                        (m.oficina ? '<br>' + escHtml(m.oficina) : '') +
+                        (m.registradoPor ? '<br><small>' + escHtml(m.registradoPor) + '</small>' : '') +
+                        '</div></div>'
+                });
+            });
+
+            Object.entries(revisaoIssuesCache).forEach(function ([id, issue]) {
+                if (!issue || issue.vehicleId !== carId) return;
+                const tipos = (issue.tipos || []).map(t => ISSUE_TIPO_LABEL[t] || t).join(', ') || 'Alerta';
+                const urg = VEICULO_URGENCIA_LABEL[issue.urgencia] || issue.urgencia || '';
+                const status = issue.status === 'resolvido' ? ' · Resolvido' : '';
+                itens.push({
+                    sort: issue.date || id,
+                    html: '<div class="revisao-item alerta">' +
+                        '<div class="revisao-item-data">' + escHtml(formatarDataRevisao(issue.date)) + '</div>' +
+                        '<div class="revisao-item-titulo">Alerta: ' + escHtml(tipos) + '</div>' +
+                        '<div class="revisao-item-meta">' + escHtml(urg + status) +
+                        (issue.descricao ? '<br>' + escHtml(issue.descricao) : '') +
+                        (issue.driver ? '<br><small>' + escHtml(issue.driver) + '</small>' : '') +
+                        '</div></div>'
+                });
+            });
+
+            itens.sort((a, b) => String(b.sort).localeCompare(String(a.sort)));
+            if (!itens.length) {
+                lista.innerHTML = '<p style="font-size:0.85rem;color:#888;text-align:center;padding:16px;">Nenhum registro ainda para este veículo.</p>';
+                return;
+            }
+            lista.innerHTML = itens.slice(0, 15).map(i => i.html).join('');
+        }
+
+        async function salvarManutencaoApp() {
+            const car = fleet[idx];
+            if (!car) return;
+            const tipoEl = document.querySelector('#manut-tipos .veiculo-tipo-chip.on');
+            const tipo = tipoEl ? tipoEl.dataset.tipo : '';
+            const descricao = (document.getElementById('manut-descricao').value || '').trim();
+            const dataVal = document.getElementById('manut-data').value;
+            const kmVal = document.getElementById('manut-km').value;
+            const oficina = (document.getElementById('manut-oficina').value || '').trim();
+            if (!tipo) return alert('Selecione o tipo de manutenção.');
+            if (!descricao) return alert('Descreva o que foi feito.');
+            const btn = document.querySelector('.btn-revisao-salvar');
+            if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+            try {
+                const dataFmt = dataVal
+                    ? new Date(dataVal + 'T12:00:00').toLocaleDateString('pt-BR')
+                    : new Date().toLocaleDateString('pt-BR');
+                await laSalvarManutencaoVeiculo(car.id, {
+                    vehicleName: car.nome,
+                    tipo: tipo,
+                    descricao: descricao,
+                    date: dataFmt,
+                    km: kmVal ? parseFloat(kmVal) : null,
+                    oficina: oficina || null,
+                    driver: driver || null,
+                    role: 'motorista'
+                });
+                document.getElementById('manut-descricao').value = '';
+                document.getElementById('manut-km').value = '';
+                document.getElementById('manut-oficina').value = '';
+                document.querySelectorAll('#manut-tipos .veiculo-tipo-chip').forEach(b => b.classList.remove('on'));
+                document.getElementById('revisao-form').hidden = true;
+                alert('Manutenção registrada.');
+            } catch (e) {
+                alert('Não foi possível salvar. Verifique a internet.');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Salvar registro'; }
+            }
         }
 
         function getNomeMotoristaAtual() {
@@ -1650,6 +2076,8 @@
             driverModoOutro = false;
             proximaTela('tela-motorista', 'tela-veiculo');
             atualizarHintVeiculo();
+            mostrarAbaVeiculo('carro');
+            iniciarEscutaRevisaoVeiculo();
         }
 
         function voltarParaMotorista() {
@@ -1666,57 +2094,146 @@
             const drv = document.getElementById('trip-driver-label');
             const img = document.getElementById('sheet-car-img');
             if (label) {
-                if (destinoSelecionado && destinoSelecionado.id === 'outros') {
-                    label.textContent = destinoSelecionado.nomeCurto === 'Já saindo'
-                        ? '→ Já saindo'
-                        : '→ Rastreio livre';
-                } else if (destinoSelecionado) {
+                if (destinoSelecionado) {
                     label.textContent = '→ ' + (destinoSelecionado.nomeCurto || destinoSelecionado.nome);
+                } else if (modoOutrosAberto) {
+                    label.textContent = '→ Outros';
                 } else {
                     label.textContent = fleet[idx].nome;
                 }
             }
             if (drv) drv.textContent = driver;
             if (img) img.src = fleet[idx].foto;
+            atualizarPreCorridaResumo();
+        }
+
+        function atualizarPreCorridaResumo() {
+            const thumb = document.getElementById('pre-corrida-thumb');
+            const linha1 = document.getElementById('pre-corrida-linha1');
+            const linha2 = document.getElementById('pre-corrida-linha2');
+            if (!thumb || !linha1) return;
+            thumb.src = fleet[idx].foto;
+            linha1.textContent = driver + ' · ' + fleet[idx].nome;
+            if (linha2) {
+                if (destinoSelecionado) {
+                    const nome = destinoSelecionado.nomeCurto || destinoSelecionado.nome;
+                    linha2.textContent = 'Destino: ' + nome;
+                } else {
+                    linha2.textContent = 'Escolha o destino para iniciar';
+                }
+            }
+        }
+
+        function carregarDestinosRecentes() {
+            try {
+                const raw = localStorage.getItem(RECENT_DESTS_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) { return []; }
+        }
+
+        function salvarDestinoRecente(dest) {
+            if (!dest || running) return;
+            let lista = carregarDestinosRecentes();
+            const entry = (dest.id === 'outros' && dest.lat != null)
+                ? { tipo: 'custom', id: 'outros', nome: dest.nomeCurto || dest.nome, endereco: dest.endereco || dest.nome, lat: dest.lat, lng: dest.lng }
+                : { tipo: 'fixo', id: dest.id };
+            lista = lista.filter(function (x) {
+                if (entry.tipo === 'custom' && x.tipo === 'custom') {
+                    return (x.endereco || x.nome) !== (entry.endereco || entry.nome);
+                }
+                return !(x.tipo === 'fixo' && x.id === entry.id);
+            });
+            lista.unshift(entry);
+            if (lista.length > RECENT_DESTS_MAX) lista = lista.slice(0, RECENT_DESTS_MAX);
+            try { localStorage.setItem(RECENT_DESTS_KEY, JSON.stringify(lista)); } catch (e) { /* quota */ }
+        }
+
+        function renderizarDestinosRecentes() {
+            const wrap = document.getElementById('destino-recentes');
+            const chips = document.getElementById('destino-recentes-chips');
+            if (!wrap || !chips) return;
+            const lista = carregarDestinosRecentes();
+            if (!lista.length || running || (destinoSelecionado && !modoOutrosAberto)) {
+                wrap.hidden = true;
+                chips.innerHTML = '';
+                return;
+            }
+            wrap.hidden = false;
+            chips.innerHTML = lista.map(function (entry, i) {
+                const nome = entry.tipo === 'custom'
+                    ? (entry.nome || entry.endereco || 'Endereço')
+                    : (function () {
+                        const d = resolverDestinoPorId(entry.id);
+                        return d ? (d.nomeCurto || d.nome) : entry.id;
+                    })();
+                const tit = entry.tipo === 'custom' ? (entry.endereco || nome) : nome;
+                return '<button type="button" class="destino-recente-chip" title="' + escHtmlAttr(tit) + '" onclick="aplicarDestinoRecente(' + i + ')">' + escHtml(nome) + '</button>';
+            }).join('');
+        }
+
+        function aplicarDestinoRecente(indice) {
+            if (running) return;
+            const lista = carregarDestinosRecentes();
+            const entry = lista[indice];
+            if (!entry) return;
+            modoOutrosAberto = false;
+            if (entry.tipo === 'custom') {
+                destinoSelecionado = {
+                    id: 'outros',
+                    nome: entry.endereco || entry.nome,
+                    nomeCurto: entry.nome || entry.endereco,
+                    endereco: entry.endereco || entry.nome,
+                    lat: entry.lat,
+                    lng: entry.lng
+                };
+            } else {
+                destinoSelecionado = resolverDestinoPorId(entry.id);
+            }
+            if (!destinoSelecionado) return;
+            finalizarSelecaoDestino();
+        }
+
+        function finalizarSelecaoDestino() {
+            salvarDestinoRecente(destinoSelecionado);
+            modoOutrosAberto = false;
+            const formOutros = document.getElementById('destino-outros-form');
+            if (formOutros) formOutros.hidden = true;
+            renderizarPickerDestino();
+            atualizarBarraViagem();
+            renderizarUnidadesNoMapa();
+            atualizarPreviewRotaDestino();
+            ajustarZoomParaDestino();
         }
 
         function renderizarPickerDestino() {
             const picker = document.getElementById('destino-picker');
-            const select = document.getElementById('destino-select');
             const chips = document.getElementById('destino-chips');
             const nomeEl = document.getElementById('destino-selecionado-nome');
             const endEl = document.getElementById('destino-selecionado-end');
+            const formOutros = document.getElementById('destino-outros-form');
             if (!picker) return;
             const selId = destinoSelecionado ? destinoSelecionado.id : '';
             const dis = running ? ' disabled' : '';
 
-            if (destinoSelecionado && !running) {
+            picker.classList.toggle('modo-outros', modoOutrosAberto && !running);
+
+            if (destinoSelecionado && !running && !modoOutrosAberto) {
                 picker.classList.add('tem-selecionado');
                 const nome = destinoSelecionado.nomeCurto || destinoSelecionado.nome;
                 if (nomeEl) nomeEl.textContent = nome;
                 if (endEl) {
-                    if (destinoSelecionado.id === 'outros') endEl.textContent = 'Rastreio livre — sem destino fixo';
-                    else if (destinoSelecionado.endereco) endEl.textContent = destinoSelecionado.endereco;
+                    if (destinoSelecionado.endereco) endEl.textContent = destinoSelecionado.endereco;
                     else endEl.textContent = '';
                 }
+                if (formOutros) formOutros.hidden = true;
+                renderizarDestinosRecentes();
                 atualizarLabelDestinoSheet();
+                atualizarPreCorridaResumo();
                 return;
             }
 
             picker.classList.remove('tem-selecionado');
             const destinos = unidadesLista.filter(u => u.paradaRota);
-
-            if (select) {
-                let opts = '<option value="">Selecione o destino...</option>';
-                destinos.forEach(d => {
-                    const nome = d.nomeCurto || d.nome;
-                    opts += '<option value="' + d.id + '"' + (selId === d.id ? ' selected' : '') + '>' + nome + '</option>';
-                });
-                opts += '<option value="sede"' + (selId === 'sede' ? ' selected' : '') + '>Sede (Moema)</option>';
-                opts += '<option value="outros"' + (selId === 'outros' ? ' selected' : '') + '>Outros — rastreio livre</option>';
-                select.innerHTML = opts;
-                select.disabled = !!running;
-            }
 
             if (chips) {
                 const chipHtml = destinos.map(d => {
@@ -1725,21 +2242,93 @@
                     const end = (d.endereco || nome).replace(/"/g, '&quot;');
                     return '<button type="button" class="destino-chip' + on + '"' + dis + ' onclick="selecionarDestino(\'' + d.id + '\')" title="' + end + '">' + nome + '</button>';
                 }).join('') +
-                    '<button type="button" class="destino-chip sede' + (selId === 'sede' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'sede\')" title="Voltar para L.A. Moema">Sede</button>' +
-                    '<button type="button" class="destino-chip outros' + (selId === 'outros' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'outros\')" title="Rastreio sem destino fixo">Outros</button>';
+                    '<button type="button" class="destino-chip sede' + (selId === 'sede' ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'sede\')" title="L.A. Moema">Sede</button>' +
+                    '<button type="button" class="destino-chip outros' + (modoOutrosAberto ? ' on' : '') + '"' + dis + ' onclick="selecionarDestino(\'outros\')" title="Digite o endereço">Outros</button>';
                 chips.innerHTML = chipHtml;
             }
+
+            if (formOutros) formOutros.hidden = !modoOutrosAberto;
+            renderizarDestinosRecentes();
             atualizarLabelDestinoSheet();
+            atualizarPreCorridaResumo();
+        }
+
+        async function geocodificarEndereco(texto) {
+            const busca = (texto || '').trim();
+            if (!busca) return null;
+            const sufixo = ', São Paulo, SP, Brasil';
+
+            if (ORS_KEY) {
+                try {
+                    const url = 'https://api.openrouteservice.org/geocode/search?api_key=' + encodeURIComponent(ORS_KEY)
+                        + '&text=' + encodeURIComponent(busca + sufixo) + '&size=1';
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const f = data.features && data.features[0];
+                        if (f && f.geometry && f.geometry.coordinates) {
+                            const lng = f.geometry.coordinates[0];
+                            const lat = f.geometry.coordinates[1];
+                            const label = (f.properties && (f.properties.label || f.properties.name)) || busca;
+                            return { lat: lat, lng: lng, nome: label, endereco: label };
+                        }
+                    }
+                } catch (e) { console.warn('Geocode ORS:', e); }
+            }
+
+            try {
+                const url = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(busca + ' São Paulo') + '&limit=1&lang=pt';
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    const f = data.features && data.features[0];
+                    if (f && f.geometry && f.geometry.coordinates) {
+                        const lng = f.geometry.coordinates[0];
+                        const lat = f.geometry.coordinates[1];
+                        const p = f.properties || {};
+                        const partes = [p.name, p.street, p.housenumber, p.city].filter(Boolean);
+                        const label = partes.length ? partes.join(', ') : busca;
+                        return { lat: lat, lng: lng, nome: label, endereco: label };
+                    }
+                }
+            } catch (e) { console.warn('Geocode Photon:', e); }
+
+            return null;
+        }
+
+        async function buscarEnderecoOutros() {
+            if (running) return;
+            const inp = document.getElementById('destino-outros-input');
+            const err = document.getElementById('destino-outros-erro');
+            const btn = document.getElementById('btn-buscar-outros');
+            const texto = (inp && inp.value || '').trim();
+            if (!texto) {
+                if (err) err.textContent = 'Digite o endereço para onde você vai.';
+                return;
+            }
+            if (err) err.textContent = '';
+            if (btn) { btn.disabled = true; btn.textContent = 'Buscando...'; }
+            const geo = await geocodificarEndereco(texto);
+            if (btn) { btn.disabled = false; btn.textContent = 'Buscar no mapa'; }
+            if (!geo) {
+                if (err) err.textContent = 'Não encontramos esse endereço. Tente rua, número e bairro.';
+                return;
+            }
+            const nomeCurto = geo.nome.length > 36 ? geo.nome.slice(0, 36) + '…' : geo.nome;
+            destinoSelecionado = {
+                id: 'outros',
+                nome: geo.nome,
+                nomeCurto: nomeCurto,
+                endereco: geo.endereco,
+                lat: geo.lat,
+                lng: geo.lng
+            };
+            finalizarSelecaoDestino();
         }
 
         /** @deprecated alias */
         function renderizarBarraEnderecos() {
             renderizarPickerDestino();
-        }
-
-        function onChangeDestinoSelect(val) {
-            if (!val || running) return;
-            selecionarDestino(val);
         }
 
         function renderizarTiposProblemaVeiculo() {
@@ -1771,10 +2360,16 @@
             if (leve) leve.checked = true;
         }
 
+        function setPainelMapaAlto(ativo) {
+            const tela = document.getElementById('tela-mapa');
+            if (tela) tela.classList.toggle('painel-alto', !!ativo);
+        }
+
         function marcarVeiculoOk() {
             if (running) return;
             estadoVeiculo = 'ok';
             problemaVeiculoAtual = null;
+            setPainelMapaAlto(false);
             atualizarUiVeiculoCheck();
         }
 
@@ -1784,13 +2379,22 @@
             problemaVeiculoAtual = null;
             renderizarTiposProblemaVeiculo();
             resetarFormProblemaVeiculo();
+            setPainelMapaAlto(true);
             atualizarUiVeiculoCheck();
+            setTimeout(function () {
+                const scroll = document.getElementById('pre-corrida-scroll');
+                const form = document.getElementById('veiculo-problema-form');
+                if (scroll && form) {
+                    form.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }
+            }, 150);
         }
 
         function cancelarFormProblemaVeiculo() {
             if (running) return;
             estadoVeiculo = null;
             problemaVeiculoAtual = null;
+            setPainelMapaAlto(false);
             atualizarUiVeiculoCheck();
         }
 
@@ -1798,6 +2402,7 @@
             if (running) return;
             estadoVeiculo = null;
             problemaVeiculoAtual = null;
+            setPainelMapaAlto(false);
             atualizarUiVeiculoCheck();
         }
 
@@ -1895,8 +2500,9 @@
         function trocarDestino() {
             if (running) return;
             destinoSelecionado = null;
-            const select = document.getElementById('destino-select');
-            if (select) select.value = '';
+            modoOutrosAberto = false;
+            const err = document.getElementById('destino-outros-erro');
+            if (err) err.textContent = '';
             renderizarPickerDestino();
             atualizarBarraViagem();
             renderizarUnidadesNoMapa();
@@ -1904,23 +2510,12 @@
             ajustarZoomMapaComUnidades();
         }
 
-        function jaEstouSaindo() {
-            if (running) return;
-            if (!destinoSelecionado) {
-                destinoSelecionado = { id: 'outros', nome: 'Saída da sede', nomeCurto: 'Já saindo' };
-                renderizarBarraEnderecos();
-                atualizarBarraViagem();
-                renderizarUnidadesNoMapa();
-            }
-            toggleTracking();
-        }
-
         function atualizarLabelDestinoSheet() {
             const el = document.getElementById('destino-label-sheet');
             if (!el) return;
-            if (!destinoSelecionado) el.textContent = '—';
+            if (!destinoSelecionado) el.textContent = modoOutrosAberto ? 'Digite o endereço' : '—';
             else if (destinoSelecionado.id === 'sede') el.textContent = 'Sede (Moema)';
-            else if (destinoSelecionado.id === 'outros') el.textContent = 'Outros — rastreio livre';
+            else if (destinoSelecionado.id === 'outros') el.textContent = destinoSelecionado.endereco || destinoSelecionado.nome;
             else el.textContent = destinoSelecionado.nomeCurto || destinoSelecionado.nome;
             atualizarBotoesNavegacao();
         }
@@ -1928,14 +2523,14 @@
         function atualizarBotoesNavegacao() {
             const nav = document.getElementById('sheet-navegar');
             if (!nav) return;
-            const ok = destinoSelecionado && destinoSelecionado.id !== 'outros' && destinoSelecionado.lat != null;
+            const ok = destinoSelecionado && destinoSelecionado.lat != null;
             nav.style.display = ok && !running ? 'flex' : 'none';
         }
 
         /** Navegação grátis: só abre link (sem API paga do Google). */
         function abrirNavegacao(tipo) {
-            if (!destinoSelecionado || destinoSelecionado.id === 'outros') {
-                return alert('Navegação só para destinos fixos. Em "Outros" use só o rastreio.');
+            if (!destinoSelecionado || destinoSelecionado.lat == null) {
+                return alert('Escolha um destino com endereço no mapa antes de navegar.');
             }
             const dest = destinoSelecionado;
             const base = unidadesLista.find(u => u.matriz);
@@ -1964,16 +2559,29 @@
                     ? { ...base, id: 'sede', nome: 'L.A. Moema — Sede', nomeCurto: 'Sede' }
                     : null;
             }
-            if (id === 'outros') return { id: 'outros', nome: 'Outros', nomeCurto: 'Outros' };
+            if (id === 'outros') return null;
             return unidadesLista.find(u => u.id === id) || null;
         }
 
-        function salvarUltimoDestino(id) {
-            if (!id || running) return;
-            try { localStorage.setItem(LAST_DEST_KEY, id); } catch (e) { /* quota */ }
-        }
-
         function restaurarUltimoDestino() {
+            const recentes = carregarDestinosRecentes();
+            if (recentes.length) {
+                const entry = recentes[0];
+                modoOutrosAberto = false;
+                if (entry.tipo === 'custom') {
+                    destinoSelecionado = {
+                        id: 'outros',
+                        nome: entry.endereco || entry.nome,
+                        nomeCurto: entry.nome || entry.endereco,
+                        endereco: entry.endereco || entry.nome,
+                        lat: entry.lat,
+                        lng: entry.lng
+                    };
+                } else {
+                    destinoSelecionado = resolverDestinoPorId(entry.id);
+                }
+                return !!destinoSelecionado;
+            }
             try {
                 const id = localStorage.getItem(LAST_DEST_KEY);
                 const d = resolverDestinoPorId(id);
@@ -1987,13 +2595,21 @@
 
         function selecionarDestino(id) {
             if (running) return;
+            if (id === 'outros') {
+                modoOutrosAberto = true;
+                destinoSelecionado = null;
+                const err = document.getElementById('destino-outros-erro');
+                if (err) err.textContent = '';
+                renderizarPickerDestino();
+                atualizarBarraViagem();
+                const inp = document.getElementById('destino-outros-input');
+                if (inp) setTimeout(function () { inp.focus(); }, 150);
+                return;
+            }
+            modoOutrosAberto = false;
             destinoSelecionado = resolverDestinoPorId(id);
-            if (destinoSelecionado) salvarUltimoDestino(destinoSelecionado.id);
-            renderizarBarraEnderecos();
-            atualizarBarraViagem();
-            renderizarUnidadesNoMapa();
-            atualizarPreviewRotaDestino();
-            ajustarZoomParaDestino();
+            if (!destinoSelecionado) return;
+            finalizarSelecaoDestino();
         }
 
         function limparPreviewRota() {
@@ -2011,7 +2627,7 @@
         async function atualizarPreviewRotaDestino() {
             limparPreviewRota();
             if (!map || running) return;
-            if (!destinoSelecionado || destinoSelecionado.id === 'outros' || destinoSelecionado.lat == null) return;
+            if (!destinoSelecionado || destinoSelecionado.lat == null) return;
 
             const dest = destinoSelecionado;
 
@@ -2071,7 +2687,7 @@
             const pts = [];
             const base = unidadesLista.find(u => u.matriz);
             if (base) pts.push([base.lat, base.lng]);
-            if (destinoSelecionado && destinoSelecionado.id !== 'outros' && destinoSelecionado.lat) {
+            if (destinoSelecionado && destinoSelecionado.lat != null) {
                 pts.push([destinoSelecionado.lat, destinoSelecionado.lng]);
             }
             if (path.length) path.forEach(p => pts.push(p));
@@ -2178,7 +2794,8 @@
         }
 
         function deveExibirUnidadeNoMapa(u, selId) {
-            if (destinoSelecionado && destinoSelecionado.id === 'outros') return !!u.matriz;
+            if (destinoSelecionado && destinoSelecionado.id === 'outros' && destinoSelecionado.lat == null) return !!u.matriz;
+            if (destinoSelecionado && destinoSelecionado.id === 'outros' && destinoSelecionado.lat != null) return !!u.matriz;
             if (destinoSelecionado && destinoSelecionado.id === 'sede') return !!u.matriz;
             if (u.matriz) return true;
             if (!u.paradaRota) return false;
@@ -2215,7 +2832,28 @@
                 m.addTo(unidadesLayer);
             });
             unidadesLayer.addTo(map);
+            atualizarMarcadorDestinoCustom();
             atualizarLinhaDestino();
+        }
+
+        function atualizarMarcadorDestinoCustom() {
+            if (!map) return;
+            if (marcadorDestinoCustom) {
+                map.removeLayer(marcadorDestinoCustom);
+                marcadorDestinoCustom = null;
+            }
+            if (!destinoSelecionado || destinoSelecionado.lat == null) return;
+            if (destinoSelecionado.id !== 'outros') return;
+            const icon = L.divIcon({
+                className: 'unidade-marker-wrap',
+                html: '<div class="unidade-marker parada-rota selecionado"></div>',
+                iconSize: [18, 18],
+                iconAnchor: [9, 9]
+            });
+            const tip = '<div class="unidade-tip"><b>' + escHtml(destinoSelecionado.nomeCurto || destinoSelecionado.nome) + '</b><span>' + escHtml(destinoSelecionado.endereco || '') + '</span></div>';
+            marcadorDestinoCustom = L.marker([destinoSelecionado.lat, destinoSelecionado.lng], { icon: icon, zIndexOffset: 600 })
+                .bindTooltip(tip, { permanent: true, direction: 'top', offset: [0, -12], className: 'unidade-tooltip' })
+                .addTo(map);
         }
 
         function atualizarLinhaSaidaDaBase() {
@@ -2429,7 +3067,7 @@
 
         async function desenharRotaPlanejadaAteDestino() {
             limparRotaPlanejada();
-            if (!map || !destinoSelecionado || destinoSelecionado.id === 'outros' || destinoSelecionado.lat == null) return;
+            if (!map || !destinoSelecionado || destinoSelecionado.lat == null) return;
             return new Promise(resolve => {
                 navigator.geolocation.getCurrentPosition(async p => {
                     const coords = [
@@ -2604,7 +3242,11 @@
          * Separar validação em função ajuda a estudar e testar regra de negócio isoladamente.
          */
         function validarInicioCorrida() {
-            if (!destinoSelecionado) return 'Escolha um destino acima (ou "Outros").';
+            if (modoOutrosAberto) return 'Busque o endereço em Outros ou escolha outro destino.';
+            if (!destinoSelecionado) return 'Escolha para onde você vai.';
+            if (destinoSelecionado.id === 'outros' && destinoSelecionado.lat == null) {
+                return 'Em Outros, digite o endereço e toque em Buscar no mapa.';
+            }
             if (!estadoVeiculo) return 'Toque em "OK" ou reporte um problema no veículo.';
             if (estadoVeiculo === 'form') return 'Envie o alerta ou cancele o relatório de problema.';
             if (veiculoBloqueiaCorrida()) return 'Veículo marcado como não utilizável. Avise o gestor.';
@@ -2815,6 +3457,7 @@
                 path: snappedPath,
                 destino: destinoSelecionado ? (destinoSelecionado.nomeCurto || destinoSelecionado.nome) : '—',
                 destinoId: destinoSelecionado ? destinoSelecionado.id : null,
+                enderecoDestino: destinoSelecionado ? (destinoSelecionado.endereco || null) : null,
                 // Campo didático da Fase 1: exemplo de ampliação do JSON salvo em trips.
                 motivoCorrida: getMotivoCorridaResolvido() || '—',
                 problemaVeiculo: problemaVeiculoAtual ? {

@@ -79,6 +79,19 @@ async function laValidarPapel(papeisPermitidos) {
     return papel;
 }
 
+/** Registra manutenção / revisão do veículo. Retorna a chave gerada. */
+async function laSalvarManutencaoVeiculo(vehicleId, dados) {
+    const ref = laDb().ref('vehicle_maintenance/' + vehicleId).push();
+    const user = laAuth().currentUser;
+    const payload = Object.assign({}, dados, {
+        criadoEm: new Date().toISOString(),
+        registradoPor: user ? user.email : null,
+        registradoUid: user ? user.uid : null
+    });
+    await ref.set(payload);
+    return ref.key;
+}
+
 /** Salva alerta de problema no veículo (motorista). Retorna a chave gerada. */
 async function laSalvarProblemaVeiculo(dados) {
     const ref = laDb().ref('vehicle_issues').push();
