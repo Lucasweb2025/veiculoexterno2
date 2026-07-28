@@ -62,12 +62,24 @@ Se o Gradle travar no OneDrive, copie `la-controle-capacitor` para `C:\Projetos\
 ## Estrutura
 
 ```
+src/styles/                — fonte CSS (editar aqui)
+src/shared/utils.js        — utilitários compartilhados
+assets/css/                — CSS publicado (npm run sync:assets)
+assets/js/                   — JS publicado (utils.js)
 index.html, painel.html    — telas web
-la-firebase.js             — auth e banco
-la-integracao.js           — webhook (opcional)
+src/shared/firebase/la-firebase.js  — auth e banco (fonte)
+assets/js/                            — publicado (firebase + utils)
+la-integracao.js                      — webhook (opcional)
 database.rules.json        — regras Firebase (publicar no Console)
-docs/                      — documentação completa
+docs/                      — documentação (+ REFATORACAO-PLANO.md)
 la-controle-capacitor/     — projeto Android
+scripts/sync-assets.mjs    — copia CSS para assets/
+```
+
+Refatoração em andamento: ver **`docs/REFATORACAO-PLANO.md`**.
+
+```bash
+npm run sync:assets   # após editar src/styles/
 ```
 
 ---

@@ -2,7 +2,7 @@
  * Copia o app motorista da pasta pai (veiculoexterno2/) para www/.
  * Não edite www/ à mão — altere index.html na raiz do repositório.
  */
-import { copyFileSync, mkdirSync, existsSync } from 'fs';
+import { copyFileSync, mkdirSync, existsSync, cpSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,7 +13,7 @@ const src = join(root, '..');
 
 const arquivos = [
   'index.html',
-  'la-firebase.js',
+  'painel.html',
   'la-integracao.js',
   'la-config.example.js',
   'manifest.json',
@@ -40,6 +40,13 @@ if (existsSync(configRepo)) {
   console.log('OK la-config.js');
 } else {
   console.log('Dica: copie la-config.example.js → la-config.js e preencha ORS_KEY');
+}
+
+const assetsSrc = join(src, 'assets');
+const assetsDest = join(www, 'assets');
+if (existsSync(assetsSrc)) {
+  cpSync(assetsSrc, assetsDest, { recursive: true });
+  console.log('OK assets/');
 }
 
 console.log('\nFonte:', src);

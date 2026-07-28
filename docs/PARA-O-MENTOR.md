@@ -22,7 +22,7 @@ Sistema de controle de frota com:
 |------------|---------|--------|
 | App motorista | `index.html` | Login, escolha motorista/veículo, GPS, corrida, alertas de veículo |
 | Painel gestor | `painel.html` | Histórico, filtros, mapa da rota, alertas, export CSV |
-| Firebase compartilhado | `la-firebase.js` | Auth, perfis, persistência de viagens e alertas |
+| Firebase compartilhado | `src/shared/firebase/la-firebase.js` → `assets/js/la-firebase.js` | Auth, perfis, persistência de viagens e alertas |
 | Integração webhook | `la-integracao.js` | POST para plataforma L.A. ao finalizar viagem ou reportar problema |
 | Regras RTDB | `database.rules.json` | Segurança por papel (motorista / gestor / admin) |
 | Android (APK) | `la-controle-capacitor/` | Capacitor + GPS nativo |

@@ -1,9 +1,19 @@
-const CACHE_NAME = 'la-controle-v68';
+const CACHE_NAME = 'la-controle-v72';
 const ASSETS = [
   './',
   './index.html',
   './painel.html',
-  './la-firebase.js',
+  './assets/js/la-firebase.js',
+  './assets/js/utils.js',
+  './assets/js/constants.js',
+  './assets/js/state.js',
+  './assets/js/motorista-auth.js',
+  './assets/js/destinos.js',
+  './assets/js/mapa.js',
+  './assets/js/gestor-auth.js',
+  './assets/css/variables.css',
+  './assets/css/motorista.css',
+  './assets/css/painel.css',
   './manifest.json',
   'https://unpkg.com/leaflet/dist/leaflet.css',
   'https://unpkg.com/leaflet/dist/leaflet.js',

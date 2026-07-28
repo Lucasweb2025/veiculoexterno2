@@ -30,12 +30,9 @@ veiculoexterno2/
 1. Editar `index.html` / `painel.html` na **raiz** desta pasta
 2. Testar no navegador ou GitHub Pages
 3. `git commit` + `git push`
-4. APK:
-   ```bash
-   cd la-controle-capacitor
-   npm run cap:sync
-   ```
-   Android Studio → `android/` → Generate APK
+4. APK (recomendado — fora do OneDrive):
+   - Duplo-clique em **`BUILD-APK.bat`** na raiz
+   - Ou manualmente: copiar para `C:\Projetos\veiculoexterno2` → `npm run cap:sync` → abrir `android/` no Studio
 
 ---
 

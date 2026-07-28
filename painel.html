@@ -1,389 +1,20 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1a1a1a">
-    <title>L.A. Controle — Painel</title>
+    <title>L.A. Controle - Painel</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="la-firebase.js"></script>
-    <style>
-        :root {
-            --yellow: #F5C518;
-            --yellow-hover: #E5B800;
-            --black: #1a1a1a;
-            --white: #ffffff;
-            --gray-bg: #f5f5f5;
-            --gray-border: #e8e8e8;
-            --text-muted: #888;
-            --route-99: #276EF1;
-            --danger: #e74c3c;
-            --safe-top: env(safe-area-inset-top, 0px);
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body {
-            min-height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--gray-bg);
-            color: var(--black);
-        }
-        .painel-shell {
-            max-width: 520px;
-            margin: 0 auto;
-            min-height: 100dvh;
-            background: var(--white);
-            box-shadow: 0 0 24px rgba(0,0,0,0.06);
-        }
+    <script src="assets/js/la-firebase.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/gestor-auth.js"></script>
 
-        /* —— Login (igual app motorista) —— */
-        #painel-login {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100dvh;
-            padding: 24px 20px;
-            background: var(--gray-bg);
-        }
-        .login-wrap { width: 100%; max-width: 360px; text-align: center; }
-        .login-logo { height: 56px; margin-bottom: 16px; }
-        .login-sub {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-        }
-        .login-card {
-            background: var(--white);
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-            text-align: left;
-        }
-        .field-label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin-bottom: 6px;
-        }
-        .input {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid var(--gray-border);
-            border-radius: 12px;
-            font-size: 1rem;
-            margin-bottom: 14px;
-            outline: none;
-            background: var(--white);
-            color: var(--black);
-        }
-        .input:focus { border-color: var(--yellow); }
-        .btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 800;
-            cursor: pointer;
-        }
-        .btn-yellow {
-            background: var(--yellow);
-            color: var(--black);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        .btn-yellow:active { background: var(--yellow-hover); }
-
-        /* —— Painel logado —— */
-        #painel-content { display: none; flex-direction: column; min-height: 100dvh; }
-        .top-bar {
-            background: var(--black);
-            color: var(--white);
-            padding: calc(14px + var(--safe-top)) 16px 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-        .top-bar h1 { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
-        .top-bar .sub { font-size: 0.7rem; opacity: 0.75; font-weight: 400; margin-top: 2px; }
-        .top-logo { height: 36px; display: block; margin-bottom: 4px; }
-        .top-actions { display: flex; gap: 8px; flex-shrink: 0; }
-        .btn-top {
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.08);
-            color: var(--white);
-        }
-        .btn-top-danger { border-color: rgba(231,76,60,0.5); color: #ffb4a8; }
-
-        .main-painel {
-            flex: 1;
-            padding: 16px 16px calc(20px + var(--safe-bottom));
-            background: var(--gray-bg);
-        }
-        .section-title {
-            font-size: 0.65rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-            padding-left: 4px;
-        }
-
-        .card {
-            background: var(--white);
-            border-radius: 16px;
-            padding: 18px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-            border: 1px solid var(--gray-border);
-            margin-bottom: 12px;
-        }
-        .card-filtros-title {
-            font-size: 0.7rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: var(--black);
-            margin-bottom: 12px;
-            letter-spacing: 0.05em;
-        }
-        .filtro-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        @media (max-width: 400px) { .filtro-grid { grid-template-columns: 1fr; } }
-        .filtro-label {
-            display: block;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-        .filtro-input {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 2px solid var(--gray-border);
-            background: var(--white);
-            color: var(--black);
-            font-size: 0.9rem;
-            outline: none;
-        }
-        .filtro-input:focus { border-color: var(--yellow); }
-        .filtro-btns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-        .btn-filtro {
-            padding: 12px 18px;
-            border-radius: 10px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            cursor: pointer;
-            border: none;
-        }
-        .btn-filtro-aplicar { background: var(--yellow); color: var(--black); }
-        .btn-filtro-limpar {
-            background: var(--white);
-            color: var(--text-muted);
-            border: 2px solid var(--gray-border);
-        }
-        .btn-filtro-exportar {
-            background: var(--black);
-            color: var(--yellow);
-            border: 2px solid var(--black);
-        }
-
-        .lista-alertas { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-        .issue-card {
-            background: var(--white);
-            border-radius: 16px;
-            padding: 14px 16px;
-            border: 1px solid var(--gray-border);
-            border-left: 4px solid #e65100;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-        }
-        .issue-card.critico { border-left-color: var(--danger); background: #fff8f8; }
-        .issue-card.resolvido { opacity: 0.65; border-left-color: #9e9e9e; }
-        .issue-car { font-size: 0.95rem; font-weight: 800; }
-        .issue-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
-        .issue-meta b { color: var(--black); }
-        .issue-badge {
-            display: inline-block;
-            margin-top: 6px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.65rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            background: #fff3e0;
-            color: #e65100;
-        }
-        .issue-badge.critico { background: #ffebee; color: var(--danger); }
-        .btn-issue-resolver {
-            margin-top: 10px;
-            padding: 10px 14px;
-            border: none;
-            border-radius: 10px;
-            background: var(--yellow);
-            font-size: 0.72rem;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .manut-form-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
-        .manut-form-grid .filtro-input { width: 100%; }
-        .lista-manutencoes { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-        .manut-card {
-            background: var(--white);
-            border-radius: 16px;
-            padding: 14px 16px;
-            border: 1px solid var(--gray-border);
-            border-left: 4px solid #2e7d32;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-        }
-        .manut-titulo { font-size: 0.95rem; font-weight: 800; }
-        .manut-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
-        .btn-manut-salvar {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            background: var(--yellow);
-            font-size: 0.8rem;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .lista-viagens { display: flex; flex-direction: column; gap: 10px; }
-        .trip-card {
-            background: var(--white);
-            border-radius: 16px;
-            padding: 16px;
-            border: 1px solid var(--gray-border);
-            border-left: 4px solid var(--yellow);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-        }
-        .trip-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-        .trip-car { font-size: 1.05rem; font-weight: 800; color: var(--black); }
-        .trip-driver { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
-        .trip-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
-        .trip-meta b { color: var(--black); font-weight: 600; }
-        .trip-km { font-size: 1.1rem; font-weight: 800; color: var(--black); white-space: nowrap; }
-        .btn-ver-rota {
-            margin-top: 8px;
-            padding: 8px 14px;
-            border: none;
-            border-radius: 8px;
-            background: var(--yellow);
-            color: var(--black);
-            font-size: 0.65rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            cursor: pointer;
-        }
-        .empty-msg {
-            text-align: center;
-            color: var(--text-muted);
-            padding: 32px 16px;
-            font-size: 0.9rem;
-        }
-        .paginacao {
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            margin-top: 4px;
-            padding: 14px 16px;
-            background: var(--white);
-            border-radius: 16px;
-            border: 1px solid var(--gray-border);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-        }
-        .paginacao-info {
-            flex: 1;
-            text-align: center;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            line-height: 1.35;
-        }
-        .paginacao-info b { color: var(--black); }
-        .btn-pagina {
-            flex-shrink: 0;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            cursor: pointer;
-            border: 2px solid var(--gray-border);
-            background: var(--white);
-            color: var(--black);
-        }
-        .btn-pagina:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-        .btn-pagina:not(:disabled):active { background: var(--gray-bg); }
-
-        /* —— Modal mapa —— */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 200;
-            background: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-        .modal-box {
-            background: var(--white);
-            border-radius: 20px;
-            padding: 20px;
-            width: 100%;
-            max-width: 480px;
-            max-height: 90vh;
-            overflow: auto;
-        }
-        .modal-close {
-            float: right;
-            border: none;
-            background: none;
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: var(--text-muted);
-            cursor: pointer;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-        .modal-titulo {
-            font-size: 0.9rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: var(--black);
-            margin-bottom: 12px;
-            clear: both;
-        }
-        #mapa-modal {
-            height: 360px;
-            width: 100%;
-            border-radius: 12px;
-            border: 2px solid var(--gray-border);
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/painel.css">
 </head>
 <body>
 
@@ -392,7 +23,7 @@
         <div id="painel-login">
             <div class="login-wrap">
                 <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="login-logo" alt="L.A.">
-                <p class="login-sub">Painel de gestão — telemetria</p>
+                <p class="login-sub">Painel de gestÃ£o â€” telemetria</p>
                 <div class="login-card">
                     <label class="field-label" for="email-painel">E-mail</label>
                     <input type="email" id="email-painel" class="input" placeholder="seu@email.com" autocomplete="username"
@@ -401,6 +32,7 @@
                     <input type="password" id="senha-painel" class="input" placeholder="Senha" autocomplete="current-password"
                         onkeypress="if(event.key==='Enter') loginPainel()">
                     <button type="button" id="btn-login-painel" class="btn btn-yellow" onclick="loginPainel()">Entrar</button>
+                    <button type="button" class="btn-ghost" onclick="window.location.href='index.html'">App motorista</button>
                 </div>
             </div>
         </div>
@@ -411,7 +43,7 @@
                 <div>
                     <img src="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png" class="top-logo" alt="L.A.">
                     <h1>L.A. Controle</h1>
-                    <div class="sub">Gestão de telemetria</div>
+                    <div class="sub">GestÃ£o de telemetria</div>
                 </div>
                 <div class="top-actions">
                     <button type="button" class="btn-top" onclick="window.location.reload()">Atualizar</button>
@@ -420,15 +52,15 @@
             </header>
 
             <main class="main-painel">
-                <p class="section-title">Alertas de veículo</p>
+                <p class="section-title">Alertas de veÃ­culo</p>
                 <div id="lista-alertas" class="lista-alertas"></div>
 
-                <p class="section-title">Revisão e manutenção</p>
+                <p class="section-title">RevisÃ£o e manutenÃ§Ã£o</p>
                 <div class="card" style="margin-bottom:16px;">
-                    <div class="card-filtros-title">Registrar manutenção (gestor)</div>
+                    <div class="card-filtros-title">Registrar manutenÃ§Ã£o (gestor)</div>
                     <div class="manut-form-grid">
                         <div>
-                            <label class="filtro-label" for="manut-painel-veiculo">Veículo</label>
+                            <label class="filtro-label" for="manut-painel-veiculo">VeÃ­culo</label>
                             <select id="manut-painel-veiculo" class="filtro-input"></select>
                         </div>
                         <div>
@@ -438,16 +70,16 @@
                         <div>
                             <label class="filtro-label" for="manut-painel-tipo">Tipo</label>
                             <select id="manut-painel-tipo" class="filtro-input">
-                                <option value="revisao">Revisão geral</option>
+                                <option value="revisao">RevisÃ£o geral</option>
                                 <option value="freio">Freio</option>
-                                <option value="oleo">Óleo</option>
+                                <option value="oleo">Ã“leo</option>
                                 <option value="pneu">Pneu</option>
                                 <option value="outro">Outro</option>
                             </select>
                         </div>
                         <div>
                             <label class="filtro-label" for="manut-painel-desc">O que foi feito</label>
-                            <input type="text" id="manut-painel-desc" class="filtro-input" maxlength="300" placeholder="Descrição da manutenção">
+                            <input type="text" id="manut-painel-desc" class="filtro-input" maxlength="300" placeholder="DescriÃ§Ã£o da manutenÃ§Ã£o">
                         </div>
                         <div>
                             <label class="filtro-label" for="manut-painel-km">Km</label>
@@ -462,11 +94,11 @@
                             <input type="number" id="manut-painel-custo" class="filtro-input" min="0" step="0.01" placeholder="Opcional">
                         </div>
                     </div>
-                    <button type="button" class="btn-manut-salvar" onclick="salvarManutencaoPainel()">Salvar manutenção</button>
+                    <button type="button" class="btn-manut-salvar" onclick="salvarManutencaoPainel()">Salvar manutenÃ§Ã£o</button>
                 </div>
                 <div id="lista-manutencoes" class="lista-manutencoes"></div>
 
-                <p class="section-title">Histórico de movimentação</p>
+                <p class="section-title">HistÃ³rico de movimentaÃ§Ã£o</p>
 
                 <div class="card">
                     <div class="card-filtros-title">Filtros</div>
@@ -476,7 +108,7 @@
                             <select id="filtro-motorista" class="filtro-input"><option value="todos">Todos</option></select>
                         </div>
                         <div>
-                            <label class="filtro-label" for="filtro-veiculo">Veículo</label>
+                            <label class="filtro-label" for="filtro-veiculo">VeÃ­culo</label>
                             <select id="filtro-veiculo" class="filtro-input"><option value="todos">Todos</option></select>
                         </div>
                         <div>
@@ -484,7 +116,7 @@
                             <select id="filtro-destino" class="filtro-input"><option value="todos">Todos</option></select>
                         </div>
                         <div>
-                            <label class="filtro-label" for="filtro-data-inicio">Data início</label>
+                            <label class="filtro-label" for="filtro-data-inicio">Data inÃ­cio</label>
                             <input type="date" id="filtro-data-inicio" class="filtro-input">
                         </div>
                         <div>
@@ -500,14 +132,14 @@
                 </div>
 
                 <div id="lista-viagens" class="lista-viagens"></div>
-                <div id="paginacao" class="paginacao" aria-label="Paginação do histórico"></div>
+                <div id="paginacao" class="paginacao" aria-label="PaginaÃ§Ã£o do histÃ³rico"></div>
             </main>
         </div>
     </div>
 
     <div id="overlay" class="modal-overlay">
         <div class="modal-box">
-            <button type="button" class="modal-close" onclick="fecharMapa()">Fechar ✕</button>
+            <button type="button" class="modal-close" onclick="fecharMapa()">Fechar âœ•</button>
             <h3 id="modal-titulo" class="modal-titulo">Trajeto da viagem</h3>
             <div id="mapa-modal"></div>
         </div>
@@ -526,96 +158,31 @@
         let issuesAll = {};
         let manutAll = {};
         const MANUT_TIPO_LABEL = {
-            revisao: 'Revisão geral', freio: 'Freio', oleo: 'Óleo', pneu: 'Pneu', outro: 'Outro'
+            revisao: 'RevisÃ£o geral', freio: 'Freio', oleo: 'Ã“leo', pneu: 'Pneu', outro: 'Outro'
         };
         const ISSUE_TIPO_LABEL = {
             freio: 'Freio', barulho: 'Barulho', pneu: 'Pneu',
             luz: 'Luz no painel', vazamento: 'Vazamento', outro: 'Outro'
         };
         const ISSUE_URGENCIA_LABEL = {
-            leve: 'Leve', atencao: 'Atenção', nao_usar: 'Não usar'
+            leve: 'Leve', atencao: 'AtenÃ§Ã£o', nao_usar: 'NÃ£o usar'
         };
         let filtrosAtivos = { motorista: 'todos', veiculo: 'todos', destino: 'todos', dataInicio: '', dataFim: '' };
         const ITENS_POR_PAGINA = 10;
         let paginaAtual = 1;
 
-        function mostrarPainelLogado() {
-            return laValidarPapel([LA_PAPEIS.GESTOR, LA_PAPEIS.ADMIN]).then(function () {
-                document.getElementById('painel-login').style.display = 'none';
-                const content = document.getElementById('painel-content');
-                content.style.display = 'flex';
-                iniciarEscutaTrips();
-                iniciarEscutaIssues();
-                iniciarEscutaManutencoes();
-                const dataManut = document.getElementById('manut-painel-data');
-                if (dataManut && !dataManut.value) dataManut.value = new Date().toISOString().slice(0, 10);
-            });
+        async function laAposLoginPainel() {
+            iniciarEscutaTrips();
+            iniciarEscutaIssues();
+            iniciarEscutaManutencoes();
+            const dataManut = document.getElementById('manut-painel-data');
+            if (dataManut && !dataManut.value) dataManut.value = new Date().toISOString().slice(0, 10);
         }
 
-        function mostrarPainelLogin(err) {
-            document.getElementById('painel-login').style.display = 'flex';
-            document.getElementById('painel-content').style.display = 'none';
+        function laAoSairPainel() {
             pararEscutaTrips();
             pararEscutaIssues();
             pararEscutaManutencoes();
-            if (err && err.code) alert(laMensagemErroAuth(err));
-        }
-
-        laObservarAuth(mostrarPainelLogado, mostrarPainelLogin);
-
-        async function loginPainel() {
-            const email = document.getElementById('email-painel').value;
-            const senha = document.getElementById('senha-painel').value;
-            const btn = document.getElementById('btn-login-painel');
-            if (!email.trim() || !senha) return alert('Preencha e-mail e senha.');
-            btn.disabled = true;
-            btn.textContent = 'Entrando...';
-            try {
-                await laEntrar(email, senha);
-                document.getElementById('senha-painel').value = '';
-            } catch (err) {
-                alert(laMensagemErroAuth(err));
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Entrar';
-            }
-        }
-
-        async function logoutPainel() {
-            pararEscutaTrips();
-            pararEscutaIssues();
-            pararEscutaManutencoes();
-            await laSair();
-            location.reload();
-        }
-
-        function esc(str) {
-            const d = document.createElement('div');
-            d.textContent = str || '---';
-            return d.innerHTML;
-        }
-
-        function normalizarTexto(s) { return (s || '').trim().toLowerCase(); }
-
-        function parseTripDate(str) {
-            if (!str) return null;
-            const parte = String(str).split(',')[0].trim();
-            const p = parte.split('/');
-            if (p.length !== 3) return null;
-            const d = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1, y = parseInt(p[2], 10);
-            if (!d || m < 0 || !y) return null;
-            return new Date(y, m, d);
-        }
-
-        function parseInputDate(val) {
-            if (!val) return null;
-            const p = val.split('-').map(Number);
-            if (p.length !== 3) return null;
-            return new Date(p[0], p[1] - 1, p[2]);
-        }
-
-        function diaMs(date) {
-            return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
         }
 
         function tripNoPeriodo(trip, inicio, fim) {
@@ -708,10 +275,10 @@
             pagEl.innerHTML = `
                 <button type="button" class="btn-pagina" onclick="irPaginaAnterior()" ${paginaAtual <= 1 ? 'disabled' : ''}>Anterior</button>
                 <div class="paginacao-info">
-                    Página <b>${paginaAtual}</b> de <b>${totalPaginas}</b><br>
-                    <span>${inicio}–${fim} de ${total}</span>
+                    PÃ¡gina <b>${paginaAtual}</b> de <b>${totalPaginas}</b><br>
+                    <span>${inicio}â€“${fim} de ${total}</span>
                 </div>
-                <button type="button" class="btn-pagina" onclick="irPaginaProxima()" ${paginaAtual >= totalPaginas ? 'disabled' : ''}>Próxima</button>`;
+                <button type="button" class="btn-pagina" onclick="irPaginaProxima()" ${paginaAtual >= totalPaginas ? 'disabled' : ''}>PrÃ³xima</button>`;
         }
 
         function irPaginaAnterior() {
@@ -761,22 +328,22 @@
             });
             entries.sort((a, b) => String(b.m.criadoEm || b.m.date || '').localeCompare(String(a.m.criadoEm || a.m.date || '')));
             if (!entries.length) {
-                container.innerHTML = '<p class="empty-msg">Nenhuma manutenção registrada.</p>';
+                container.innerHTML = '<p class="empty-msg">Nenhuma manutenÃ§Ã£o registrada.</p>';
                 return;
             }
             container.innerHTML = '';
             entries.slice(0, 20).forEach(({ vehicleId, m }) => {
-                const tipo = esc(MANUT_TIPO_LABEL[m.tipo] || m.tipo || 'Manutenção');
+                const tipo = esc(MANUT_TIPO_LABEL[m.tipo] || m.tipo || 'ManutenÃ§Ã£o');
                 const car = esc(m.vehicleName || vehicleId);
-                const data = esc((m.date || '—').split(',')[0]);
-                const desc = esc(m.descricao || '—');
+                const data = esc((m.date || 'â€”').split(',')[0]);
+                const desc = esc(m.descricao || 'â€”');
                 let extra = '';
-                if (m.km) extra += 'Km: <b>' + esc(String(m.km)) + '</b> · ';
-                if (m.oficina) extra += esc(m.oficina) + ' · ';
+                if (m.km) extra += 'Km: <b>' + esc(String(m.km)) + '</b> Â· ';
+                if (m.oficina) extra += esc(m.oficina) + ' Â· ';
                 if (m.custo) extra += 'R$ ' + esc(String(m.custo));
                 container.innerHTML += `
                     <div class="manut-card">
-                        <div class="manut-titulo">${car} — ${tipo}</div>
+                        <div class="manut-titulo">${car} â€” ${tipo}</div>
                         <div class="manut-meta">${data}</div>
                         <div class="manut-meta">${desc}</div>
                         ${extra ? '<div class="manut-meta">' + extra + '</div>' : ''}
@@ -809,7 +376,7 @@
             const km = document.getElementById('manut-painel-km').value;
             const oficina = (document.getElementById('manut-painel-oficina').value || '').trim();
             const custo = document.getElementById('manut-painel-custo').value;
-            if (!vehicleId || !descricao) return alert('Preencha veículo e descrição.');
+            if (!vehicleId || !descricao) return alert('Preencha veÃ­culo e descriÃ§Ã£o.');
             const btn = document.querySelector('.btn-manut-salvar');
             if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
             try {
@@ -830,11 +397,11 @@
                 document.getElementById('manut-painel-km').value = '';
                 document.getElementById('manut-painel-oficina').value = '';
                 document.getElementById('manut-painel-custo').value = '';
-                alert('Manutenção salva.');
+                alert('ManutenÃ§Ã£o salva.');
             } catch (e) {
-                alert('Não foi possível salvar. Verifique as regras do Firebase.');
+                alert('NÃ£o foi possÃ­vel salvar. Verifique as regras do Firebase.');
             } finally {
-                if (btn) { btn.disabled = false; btn.textContent = 'Salvar manutenção'; }
+                if (btn) { btn.disabled = false; btn.textContent = 'Salvar manutenÃ§Ã£o'; }
             }
         }
 
@@ -849,7 +416,7 @@
                     return (b[1].date || '').localeCompare(a[1].date || '');
                 });
             if (!entries.length) {
-                container.innerHTML = '<p class="empty-msg">Nenhum alerta de veículo.</p>';
+                container.innerHTML = '<p class="empty-msg">Nenhum alerta de veÃ­culo.</p>';
                 return;
             }
             container.innerHTML = '';
@@ -857,11 +424,11 @@
                 const critico = issue.urgencia === 'nao_usar';
                 const resolvido = issue.status === 'resolvido';
                 const tipos = esc(formatarTiposIssue(issue.tipos));
-                const urg = esc(ISSUE_URGENCIA_LABEL[issue.urgencia] || issue.urgencia || '—');
-                const car = esc(issue.vehicleName || issue.vehicleId || '—');
-                const driver = esc(issue.driver || '—');
+                const urg = esc(ISSUE_URGENCIA_LABEL[issue.urgencia] || issue.urgencia || 'â€”');
+                const car = esc(issue.vehicleName || issue.vehicleId || 'â€”');
+                const driver = esc(issue.driver || 'â€”');
                 const desc = issue.descricao ? esc(issue.descricao) : '';
-                const data = esc(issue.date || '—');
+                const data = esc(issue.date || 'â€”');
                 const status = esc(issue.status || 'aberto');
                 const btn = resolvido ? '' :
                     '<button type="button" class="btn-issue-resolver" onclick="marcarIssueResolvido(\'' + id + '\')">Marcar resolvido</button>';
@@ -872,7 +439,7 @@
                         <div class="issue-meta">Problema: <b>${tipos}</b></div>
                         ${desc ? '<div class="issue-meta">' + desc + '</div>' : ''}
                         <div class="issue-meta">${data}</div>
-                        <span class="issue-badge${critico ? ' critico' : ''}">${urg} · ${status}</span>
+                        <span class="issue-badge${critico ? ' critico' : ''}">${urg} Â· ${status}</span>
                         ${btn}
                     </div>`;
             });
@@ -883,7 +450,7 @@
             try {
                 await db.ref('vehicle_issues/' + issueId + '/status').set('resolvido');
             } catch (e) {
-                alert('Não foi possível atualizar. Tente de novo.');
+                alert('NÃ£o foi possÃ­vel atualizar. Tente de novo.');
             }
         }
 
@@ -929,8 +496,8 @@
                 const driverName = esc(trip.driver);
                 const date = esc(trip.date);
                 const km = parseFloat(trip.km || 0).toFixed(2);
-                const motivoCorrida = esc(trip.motivoCorrida || '—');
-                const destinoTxt = esc(trip.destino || '—');
+                const motivoCorrida = esc(trip.motivoCorrida || 'â€”');
+                const destinoTxt = esc(trip.destino || 'â€”');
 
                 container.innerHTML += `
                     <div class="trip-card">
@@ -959,7 +526,7 @@
             const inicio = parseInputDate(dataInicio);
             const fim = parseInputDate(dataFim);
             if (inicio && fim && diaMs(fim) < diaMs(inicio)) {
-                return alert('Data fim não pode ser antes da data início.');
+                return alert('Data fim nÃ£o pode ser antes da data inÃ­cio.');
             }
             filtrosAtivos = {
                 motorista: document.getElementById('filtro-motorista').value,
@@ -1059,6 +626,8 @@
         function fecharMapa() {
             document.getElementById('overlay').style.display = 'none';
         }
+
+        iniciarSessaoPainel();
     </script>
 </body>
 </html>
