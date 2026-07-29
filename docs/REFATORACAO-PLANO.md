@@ -22,7 +22,7 @@ Objetivo: código organizado para handoff ao sênior, **sem quebrar** produção
 | 4 | Login motorista → `src/motorista/auth.js` | Médio | ✅ |
 | 5 | Painel gestor → `src/gestor/gestor-auth.js` | Médio | ✅ |
 | 6 | Destinos / mapa (sem GPS de corrida) | Médio | ✅ |
-| 7 | Corrida + GPS + backup | Alto | Pendente |
+| 7 | Corrida + GPS + backup | Alto | ✅ |
 | 8 | Vite bundle (opcional) | Médio | Pendente |
 
 ---
@@ -41,7 +41,10 @@ veiculoexterno2/
 │   │   ├── motorista-auth.js
 │   │   ├── state.js
 │   │   ├── destinos.js
-│   │   └── mapa.js
+│   │   ├── mapa.js
+│   │   ├── backup-viagem.js
+│   │   ├── gps.js
+│   │   └── corrida.js
 │   └── gestor/
 │       └── gestor-auth.js
 ├── assets/css/          ← CSS publicado

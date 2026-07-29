@@ -184,7 +184,7 @@ function atualizarBotoesNavegacao() {
     const nav = document.getElementById('sheet-navegar');
     if (!nav) return;
     const ok = destinoSelecionado && destinoSelecionado.lat != null;
-    nav.style.display = ok && !running ? 'flex' : 'none';
+    nav.style.display = ok ? 'flex' : 'none';
 }
 
 function abrirNavegacao(tipo) {
@@ -195,14 +195,22 @@ function abrirNavegacao(tipo) {
     const base = unidadesLista.find(u => u.matriz);
     let url;
     if (tipo === 'google') {
-        const irParaSede = destinoSelecionado.id === 'sede';
-        const origem = (!irParaSede && base) ? 'origin=' + base.lat + ',' + base.lng + '&' : '';
+        let origem = '';
+        if (running && path.length) {
+            const p = path[path.length - 1];
+            origem = 'origin=' + p[0] + ',' + p[1] + '&';
+        } else {
+            const irParaSede = destinoSelecionado.id === 'sede';
+            origem = (!irParaSede && base) ? 'origin=' + base.lat + ',' + base.lng + '&' : '';
+        }
         url = 'https://www.google.com/maps/dir/?api=1&' + origem +
             'destination=' + dest.lat + ',' + dest.lng + '&travelmode=driving';
     } else {
-        const trecho = base
-            ? base.lng + ',' + base.lat + ';' + dest.lng + ',' + dest.lat
-            : dest.lng + ',' + dest.lat;
+        const trecho = (running && path.length)
+            ? path[path.length - 1][1] + ',' + path[path.length - 1][0] + ';' + dest.lng + ',' + dest.lat
+            : (base
+                ? base.lng + ',' + base.lat + ';' + dest.lng + ',' + dest.lat
+                : dest.lng + ',' + dest.lat);
         url = 'https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=' + trecho;
     }
     const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);

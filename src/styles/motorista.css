@@ -266,10 +266,23 @@
         #tela-mapa.corrida-ativa .sheet-scroll > .sheet-divider:last-of-type {
             display: none;
         }
-        #tela-mapa.corrida-ativa .sheet-navegar,
         #tela-mapa.corrida-ativa #sheet-destino-atual,
         #tela-mapa.corrida-ativa #sheet-motivo {
             display: none !important;
+        }
+        /* Na corrida: só o botão Google Maps (compacto) */
+        #tela-mapa.corrida-ativa .sheet-navegar {
+            display: flex;
+            padding: 0 0 6px;
+            gap: 0;
+        }
+        #tela-mapa.corrida-ativa .btn-nav-osm,
+        #tela-mapa.corrida-ativa .sheet-navegar-hint {
+            display: none !important;
+        }
+        #tela-mapa.corrida-ativa .btn-nav {
+            padding: 12px 14px;
+            font-size: 0.82rem;
         }
         /* Antes da corrida: destino embaixo + botÃ£o Iniciar */
         #tela-mapa:not(.corrida-ativa) .sheet-handle,

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'la-controle-v72';
+const CACHE_NAME = 'la-controle-v75';
 const ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,9 @@ const ASSETS = [
   './assets/js/motorista-auth.js',
   './assets/js/destinos.js',
   './assets/js/mapa.js',
+  './assets/js/backup-viagem.js',
+  './assets/js/gps.js',
+  './assets/js/corrida.js',
   './assets/js/gestor-auth.js',
   './assets/css/variables.css',
   './assets/css/motorista.css',
