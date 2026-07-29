@@ -24,7 +24,7 @@ Objetivo: código organizado para handoff ao sênior, **sem quebrar** produção
 | 6 | Destinos / mapa (sem GPS de corrida) | Médio | ✅ |
 | 7 | Corrida + GPS + backup | Alto | ✅ |
 | 8 | Vite bundle (opcional) | Médio | Pendente |
-| 9 | Supabase (Auth + Postgres + Realtime) | Alto | ✅ branch `supabase/migracao` |
+| 9 | Supabase only (Auth + Postgres + Realtime) | Alto | ✅ cutover |
 
 ---
 
@@ -37,11 +37,9 @@ veiculoexterno2/
 │   ├── shared/
 │   │   ├── utils.js
 │   │   ├── constants.js
-│   │   ├── firebase/la-firebase.js
 │   │   ├── supabase/la-supabase.js
 │   │   ├── la-store.js
 │   │   └── la-backend-loader.js
-│   ├── supabase/          ← schema.sql + seed.sql
 │   ├── motorista/
 │   │   ├── motorista-auth.js
 │   │   ├── state.js
@@ -53,7 +51,8 @@ veiculoexterno2/
 │   └── gestor/
 │       └── gestor-auth.js
 ├── assets/css/          ← CSS publicado
-├── assets/js/           ← JS publicado (firebase, utils, constants, state, destinos, mapa)
+├── assets/js/           ← JS publicado (supabase, store, utils, motorista…)
+├── supabase/            ← schema.sql + seed.sql
 ├── index.html           ← entrada motorista
 ├── painel.html          ← entrada gestor
 ├── la-integracao.js     ← webhook (raiz até etapa futura)

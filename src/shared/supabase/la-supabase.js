@@ -1,5 +1,5 @@
 /**
- * Supabase — auth e persistência (espelha la-firebase.js).
+ * Supabase — auth e persistência (único backend).
  * Requer: @supabase/supabase-js (CDN) + LA_CONFIG.SUPABASE_URL / SUPABASE_ANON_KEY
  */
 (function (global) {
@@ -20,11 +20,6 @@
         client = global.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
         return client;
     }
-
-    global.laUsaSupabase = function () {
-        var c = global.LA_CONFIG || {};
-        return c.BACKEND === 'supabase' && c.SUPABASE_URL && c.SUPABASE_ANON_KEY;
-    };
 
     global.LA_PAPEIS = {
         MOTORISTA: 'motorista',
@@ -198,8 +193,4 @@
 
     global.laSupabase = laSupabase;
 
-    global.laDb = function () {
-        console.warn('laDb() não existe no Supabase — use la-store.js');
-        return null;
-    };
 })(typeof window !== 'undefined' ? window : globalThis);

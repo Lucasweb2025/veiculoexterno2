@@ -4,12 +4,9 @@
  */
 window.LA_CONFIG = window.LA_CONFIG || {};
 
-/** Backend: 'firebase' (padrão produção) ou 'supabase' */
-window.LA_CONFIG.BACKEND = 'firebase';
-
-/** Supabase — preencher para usar BACKEND = 'supabase' (ver docs/SUPABASE-MIGRACAO.md) */
+/** Supabase — obrigatório (ver docs/SUPABASE-MIGRACAO.md) */
 window.LA_CONFIG.SUPABASE_URL = 'https://ccysxafhvgqrjlofvavp.supabase.co';
-window.LA_CONFIG.SUPABASE_ANON_KEY = '';
+window.LA_CONFIG.SUPABASE_ANON_KEY = ''; // anon key do Dashboard → Settings → API
 
 window.LA_CONFIG.ORS_KEY = '';
 

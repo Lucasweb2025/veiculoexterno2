@@ -2,7 +2,7 @@
 
 App para motoristas e painel para gestores — GPS, viagens, alertas de veículo.
 
-**Firebase:** projeto `la-controle`  
+**Supabase:** https://ccysxafhvgqrjlofvavp.supabase.co  
 **Repositório:** [github.com/Lucasweb2025/veiculoexterno2](https://github.com/Lucasweb2025/veiculoexterno2)
 
 ---
@@ -18,15 +18,15 @@ App para motoristas e painel para gestores — GPS, viagens, alertas de veículo
 
 ## Para quem vai integrar (mentor / TI)
 
-Leia **`docs/PARA-O-MENTOR.md`** — arquitetura, nós do Firebase e contrato de dados.
+Leia **`docs/PARA-O-MENTOR.md`** e **`docs/SUPABASE-MIGRACAO.md`**.
 
-Dados principais no Realtime Database:
+Tabelas principais:
 
-- `/trips` — viagens finalizadas
-- `/vehicle_issues` — alertas de veículo
-- `/vehicles` — status e odômetro
-- `/motoristas` e `/fleet` — cadastros
-- `/users/{uid}/role` — perfil (`motorista`, `gestor`, `admin`)
+- `trips` — viagens finalizadas
+- `vehicle_issues` — alertas de veículo
+- `vehicles` — status e odômetro
+- `motoristas` e `fleet` — cadastros
+- `profiles` — perfil (`motorista`, `gestor`, `admin`)
 
 Webhook opcional (`la-integracao.js`) — só ativa se `WEBHOOK_URL` estiver em `la-config.js`.
 
@@ -64,22 +64,18 @@ Se o Gradle travar no OneDrive, copie `la-controle-capacitor` para `C:\Projetos\
 ```
 src/styles/                — fonte CSS (editar aqui)
 src/shared/utils.js        — utilitários compartilhados
-assets/css/                — CSS publicado (npm run sync:assets)
-assets/js/                   — JS publicado (utils.js)
+src/shared/supabase/       — auth Supabase
+src/shared/la-store.js     — CRUD + Realtime
+assets/css/ / assets/js/   — publicados (npm run sync:assets)
 index.html, painel.html    — telas web
-src/shared/firebase/la-firebase.js  — auth e banco (fonte)
-assets/js/                            — publicado (firebase + utils)
-la-integracao.js                      — webhook (opcional)
-database.rules.json        — regras Firebase (publicar no Console)
-docs/                      — documentação (+ REFATORACAO-PLANO.md)
+la-integracao.js           — webhook (opcional)
+supabase/schema.sql        — Postgres + RLS
+docs/                      — documentação
 la-controle-capacitor/     — projeto Android
-scripts/sync-assets.mjs    — copia CSS para assets/
 ```
 
-Refatoração em andamento: ver **`docs/REFATORACAO-PLANO.md`**.
-
 ```bash
-npm run sync:assets   # após editar src/styles/
+npm run sync:assets   # após editar src/
 ```
 
 ---
@@ -89,8 +85,6 @@ npm run sync:assets   # após editar src/styles/
 | Arquivo | Conteúdo |
 |---------|----------|
 | `docs/PARA-O-MENTOR.md` | Entrega para integração |
-| `docs/FIREBASE-PERFIS.md` | Login e papéis |
-| `docs/CADASTRO-FIREBASE.md` | Motoristas, frota, unidades |
-| `docs/firebase-seed-cadastros.json` | Dados iniciais para importar |
+| `docs/SUPABASE-MIGRACAO.md` | Setup Supabase |
 | `docs/SEGURANCA-PRODUCAO.md` | Checklist go-live |
 | `TRABALHO-UNICO.md` | Fluxo de trabalho da equipe |

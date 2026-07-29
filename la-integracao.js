@@ -31,6 +31,6 @@ async function laEnviarEventoPlataforma(evento, dados) {
         });
         if (!res.ok) console.warn('Plataforma respondeu', res.status);
     } catch (e) {
-        console.warn('Falha ao enviar para plataforma (viagem salva no Firebase):', e);
+        console.warn('Falha ao enviar para plataforma (viagem salva no Supabase):', e);
     }
 }

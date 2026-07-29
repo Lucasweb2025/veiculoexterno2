@@ -1,19 +1,14 @@
 /**
- * Camada de dados unificada — espelha laDb().ref() para Firebase e Supabase.
+ * Camada de dados Supabase (fleet, trips, issues, vehicles, listeners).
+ * Callbacks devolvem objetos no formato usado pela UI (compatível com o painel).
  */
 (function (global) {
     'use strict';
-
-    function usaSupabase() {
-        return typeof global.laUsaSupabase === 'function' && global.laUsaSupabase();
-    }
 
     function sb() {
         if (!global.laSupabase) throw new Error('Supabase não carregado');
         return global.laSupabase();
     }
-
-    // --- mapeamento Supabase → formato Firebase ---
 
     function rowIssue(row) {
         return {
@@ -111,16 +106,7 @@
         };
     }
 
-    // --- Fleet ---
-
     global.laCarregarFleet = function () {
-        if (!usaSupabase()) {
-            return new Promise(function (resolve) {
-                global.laDb().ref('fleet').once('value', function (snap) {
-                    resolve(snap.val() || null);
-                }, function () { resolve(null); });
-            });
-        }
         return sb().from('fleet').select('*').then(function (res) {
             if (res.error) throw res.error;
             var map = {};
@@ -132,13 +118,6 @@
     };
 
     global.laCarregarMotoristas = function () {
-        if (!usaSupabase()) {
-            return new Promise(function (resolve) {
-                global.laDb().ref('motoristas').once('value', function (snap) {
-                    resolve(snap.val() || null);
-                }, function () { resolve(null); });
-            });
-        }
         return sb().from('motoristas').select('*').then(function (res) {
             if (res.error) throw res.error;
             var map = {};
@@ -150,13 +129,6 @@
     };
 
     global.laCarregarUnidades = function () {
-        if (!usaSupabase()) {
-            return new Promise(function (resolve) {
-                global.laDb().ref('unidades').once('value', function (snap) {
-                    resolve(snap.val() || null);
-                }, function () { resolve(null); });
-            });
-        }
         return sb().from('unidades').select('*').then(function (res) {
             if (res.error) throw res.error;
             if (!res.data || !res.data.length) return null;
@@ -177,34 +149,19 @@
         });
     };
 
-    // --- Vehicles ---
-
     global.laSetVehicleStatus = function (carId, status) {
-        if (!usaSupabase()) {
-            return global.laDb().ref('vehicles/' + carId + '/status').set(status);
-        }
         return sb().from('vehicles').upsert({ id: carId, status: status }).then(function (res) {
             if (res.error) throw res.error;
         });
     };
 
     global.laSetVehicleLastPos = function (carId, data) {
-        if (!usaSupabase()) {
-            return global.laDb().ref('vehicles/' + carId + '/last_pos').set(data);
-        }
         return sb().from('vehicles').upsert({ id: carId, last_pos: data }).then(function (res) {
             if (res.error) throw res.error;
         });
     };
 
     global.laEscutarOdometro = function (carId, cb) {
-        if (!usaSupabase()) {
-            var ref = global.laDb().ref('vehicles/' + carId + '/odometer');
-            var handler = function (snap) { cb(snap.val()); };
-            ref.on('value', handler);
-            return function () { ref.off('value', handler); };
-        }
-        var unsubRt = null;
         function refresh() {
             sb().from('vehicles').select('odometer').eq('id', carId).maybeSingle()
                 .then(function (res) {
@@ -212,28 +169,16 @@
                 });
         }
         refresh();
-        unsubRt = subscribeTable('vehicles', refresh, 'id=eq.' + carId);
+        var unsubRt = subscribeTable('vehicles', refresh, 'id=eq.' + carId);
         return function () { if (unsubRt) unsubRt(); };
     };
 
-    // --- Issues ---
-
     global.laResolverIssue = function (issueId) {
-        if (!usaSupabase()) {
-            return global.laDb().ref('vehicle_issues/' + issueId + '/status').set('resolvido');
-        }
         return sb().from('vehicle_issues').update({ status: 'resolvido' }).eq('id', issueId)
             .then(function (res) { if (res.error) throw res.error; });
     };
 
     global.laEscutarIssues = function (cb) {
-        if (!usaSupabase()) {
-            var ref = global.laDb().ref('vehicle_issues');
-            var handler = function (snap) { cb(snap.val() || {}); };
-            ref.on('value', handler);
-            return function () { ref.off('value', handler); };
-        }
-        var unsubRt = null;
         function refresh() {
             sb().from('vehicle_issues').select('*').order('created_at', { ascending: false })
                 .then(function (res) {
@@ -241,20 +186,11 @@
                 });
         }
         refresh();
-        unsubRt = subscribeTable('vehicle_issues', refresh);
+        var unsubRt = subscribeTable('vehicle_issues', refresh);
         return function () { if (unsubRt) unsubRt(); };
     };
 
-    // --- Maintenance ---
-
     global.laEscutarManutencaoVeiculo = function (carId, cb) {
-        if (!usaSupabase()) {
-            var ref = global.laDb().ref('vehicle_maintenance/' + carId);
-            var handler = function (snap) { cb(snap.val() || {}); };
-            ref.on('value', handler);
-            return function () { ref.off('value', handler); };
-        }
-        var unsubRt = null;
         function refresh() {
             sb().from('vehicle_maintenance').select('*').eq('vehicle_id', carId)
                 .order('criado_em', { ascending: false })
@@ -263,18 +199,11 @@
                 });
         }
         refresh();
-        unsubRt = subscribeTable('vehicle_maintenance', refresh, 'vehicle_id=eq.' + carId);
+        var unsubRt = subscribeTable('vehicle_maintenance', refresh, 'vehicle_id=eq.' + carId);
         return function () { if (unsubRt) unsubRt(); };
     };
 
     global.laEscutarManutencoesPainel = function (cb) {
-        if (!usaSupabase()) {
-            var ref = global.laDb().ref('vehicle_maintenance');
-            var handler = function (snap) { cb(snap.val() || {}); };
-            ref.on('value', handler);
-            return function () { ref.off('value', handler); };
-        }
-        var unsubRt = null;
         function refresh() {
             sb().from('vehicle_maintenance').select('*').order('criado_em', { ascending: false })
                 .then(function (res) {
@@ -282,20 +211,11 @@
                 });
         }
         refresh();
-        unsubRt = subscribeTable('vehicle_maintenance', refresh);
+        var unsubRt = subscribeTable('vehicle_maintenance', refresh);
         return function () { if (unsubRt) unsubRt(); };
     };
 
-    // --- Trips ---
-
     global.laEscutarTrips = function (cb) {
-        if (!usaSupabase()) {
-            var ref = global.laDb().ref('trips');
-            var handler = function (snap) { cb(snap.val() || {}); };
-            ref.on('value', handler);
-            return function () { ref.off('value', handler); };
-        }
-        var unsubRt = null;
         function refresh() {
             sb().from('trips').select('*').order('created_at', { ascending: true })
                 .then(function (res) {
@@ -303,7 +223,7 @@
                 });
         }
         refresh();
-        unsubRt = subscribeTable('trips', refresh);
+        var unsubRt = subscribeTable('trips', refresh);
         return function () { if (unsubRt) unsubRt(); };
     };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -297,7 +297,7 @@ async function aquecerGpsNoMapa() {
     }
 }
 
-function publicarPosicaoAtualNoFirebase(carId, pos) {
+function publicarPosicaoAtual(carId, pos) {
     laSetVehicleLastPos(carId, {
         lat: pos[0],
         lng: pos[1],
@@ -367,7 +367,7 @@ function onPosicaoGps(carId, p) {
         atualizarBannerSemSinalGps(false);
     }
     salvarBackupViagem();
-    publicarPosicaoAtualNoFirebase(carId, pos);
+    publicarPosicaoAtual(carId, pos);
 }
 
 function iniciarWatchGpsPadrao(carId) {
