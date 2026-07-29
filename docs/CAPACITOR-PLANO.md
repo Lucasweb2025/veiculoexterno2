@@ -1,4 +1,4 @@
-# Plano Capacitor — L.A. Controle (até publicação Play)
+﻿# Plano Capacitor — L.A. Controle (até publicação Play)
 
 Pasta do projeto Android: `la-controle-capacitor/`
 
@@ -67,7 +67,7 @@ No Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)** (test
 2. **Criar app** → nome: L.A. Controle  
 3. **Teste interno** (recomendado primeiro) → enviar AAB  
 4. Adicionar testadores (e-mails)  
-5. Política de privacidade (URL ou texto — Firebase coleta dados de localização)  
+5. Política de privacidade (URL ou texto — Supabase coleta dados de localização)  
 6. Ícone 512×512, screenshots (celular)  
 7. Quando ok → produção ou teste fechado  
 
@@ -93,7 +93,7 @@ No Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)** (test
 | Problema | Solução |
 |----------|---------|
 | Tela branca no APK | `npm run sync:www` + `npm run cap:sync` |
-| Firebase não loga | `androidScheme: https` no `capacitor.config.json` (já configurado) |
+| Supabase não loga | `androidScheme: https` no `capacitor.config.json` (já configurado) |
 | Sem rota ORS | `www/la-config.js` com `ORS_KEY` |
 | GPS não pede / não libera | `ACCESS_FINE_LOCATION` no `AndroidManifest` → gerar APK de novo |
 | Gradle lento | Primeira build no Android Studio demora |

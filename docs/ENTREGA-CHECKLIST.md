@@ -8,32 +8,30 @@ Use esta lista antes de passar o projeto ao mentor.
 
 - [x] App motorista (`index.html`) — login, motorista, veículo, GPS, corrida, alertas
 - [x] Painel gestor (`painel.html`) — histórico, filtros, mapa, CSV, alertas
-- [x] Firebase compartilhado (`la-firebase.js`) + regras (`database.rules.json`)
-- [x] Cadastros dinâmicos (`/motoristas`, `/fleet`) + seed JSON
+- [x] Backend Supabase (`la-supabase.js` + `la-store.js`) + `supabase/schema.sql`
+- [x] Cadastros dinâmicos (`motoristas`, `fleet`, `unidades`) + `seed.sql`
 - [x] Documentação em `docs/`
-- [ ] **Push no GitHub** (código atualizado na `main`)
-- [ ] GitHub Pages ativo na branch `main`
+- [x] Push no GitHub (`main`)
+- [ ] GitHub Pages com `la-config.js` de deploy (anon key — não versionar)
 
 ---
 
-## Firebase Console (5 minutos)
+## Supabase Dashboard (5 minutos)
 
 1. **Authentication** — usuários criados (motorista + gestor + admin)
-2. **Realtime Database** — importar `docs/firebase-seed-cadastros.json`
-3. **Realtime Database → Regras** — colar e publicar `database.rules.json`
-4. **users** — cada UID com `role` correto (ver `FIREBASE-PERFIS.md`)
+2. **SQL** — `schema.sql` + `seed.sql`
+3. **Realtime** — `trips`, `vehicle_issues`, `vehicle_maintenance`, `vehicles`
+4. **profiles** — cada UUID com `role` correto (ver `SUPABASE-PERFIS.md`)
 
 Teste rápido:
 
 - [ ] Login no app com conta **motorista**
 - [ ] Login no painel com conta **gestor**
-- [ ] Finalizar uma viagem de teste → aparece em `/trips` e no painel
+- [ ] Finalizar uma viagem de teste → aparece em `trips` e no painel
 
 ---
 
 ## O que enviar ao mentor
-
-Copie e cole no WhatsApp/e-mail:
 
 ```
 Projeto L.A. Controle de Frota — pronto para integração.
@@ -41,18 +39,18 @@ Projeto L.A. Controle de Frota — pronto para integração.
 App: https://lucasweb2025.github.io/veiculoexterno2/
 Painel: https://lucasweb2025.github.io/veiculoexterno2/painel.html
 Código: https://github.com/Lucasweb2025/veiculoexterno2
-Firebase: projeto la-controle (te dou acesso no Console)
+Supabase: https://ccysxafhvgqrjlofvavp.supabase.co
 
 Dados para integrar:
-- /trips — viagens
-- /vehicle_issues — alertas de veículo
-- /vehicles — frota em tempo real
+- trips — viagens
+- vehicle_issues — alertas de veículo
+- vehicles — frota em tempo real
 
-Documentação: docs/PARA-O-MENTOR.md no repositório.
-Integração com a plataforma de vocês fica do lado de vocês.
+Documentação: docs/PARA-O-MENTOR.md e docs/SUPABASE-MIGRACAO.md
+Integração com a plataforma de vocês fica do lado de vocês (webhook ou leitura no Postgres).
 ```
 
-- [ ] Acesso ao Firebase Console concedido ao mentor (ou credenciais de teste)
+- [ ] Convidar mentor no projeto Supabase (ou credenciais de teste)
 
 ---
 
@@ -60,12 +58,11 @@ Integração com a plataforma de vocês fica do lado de vocês.
 
 - [ ] APK instalado em celular de teste
 - [ ] `ORS_KEY` em `la-config.js` para rotas no mapa
-- [ ] `WEBHOOK_URL` se quiserem push em vez de só ler o Firebase
+- [ ] `WEBHOOK_URL` se quiserem push além de ler o banco
 
 ---
 
 ## Não precisa fazer agora
 
 - SSO / login único empresa
-- Webhook configurado (mentor integra direto no Firebase)
-- Modularizar `index.html`
+- Webhook obrigatório (mentor pode ler Postgres direto)

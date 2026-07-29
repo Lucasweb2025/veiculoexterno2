@@ -80,21 +80,21 @@ Eventos disparados automaticamente:
 | `viagem_finalizada` | Após salvar em `trips` |
 | `alerta_veiculo` | Após salvar em `vehicle_issues` |
 
-Se o webhook falhar, os dados **permanecem no Firebase** (integração é best-effort).
+Se o webhook falhar, os dados **permanecem no Supabase** (integração é best-effort).
 
 ---
 
 ## Cadastros dinâmicos (motoristas e frota)
 
-Antes eram fixos no HTML. Agora vêm do Firebase:
+Vêm do Postgres:
 
-- `/motoristas` — lista na tela “Quem está dirigindo?”
-- `/fleet` — carros com foto e nome no app
+- `motoristas` — lista na tela “Quem está dirigindo?”
+- `fleet` — carros com foto e nome no app
 
-**Seed de exemplo:** `firebase-seed-cadastros.json`  
-**Como importar:** `CADASTRO-FIREBASE.md`
+**Seed:** `supabase/seed.sql`  
+**Como cadastrar:** `CADASTRO-SUPABASE.md`
 
-Sem dados no Firebase, o app usa fallback (Marco, Fabio / UNO, Montana).
+Sem dados nas tabelas, o app usa fallback (Marco, Fabio / UNO, Montana).
 
 ---
 
@@ -112,22 +112,22 @@ Colunas: id, veículo, motorista, destino, motivo, km, duração, data, quantida
 
 Prioridade:
 
-1. Publicar `database.rules.json` no Firebase Console (substituir regra `auth != null` temporária)
-2. Criar usuários por papel (não compartilhar conta admin)
+1. Confirmar RLS (`supabase/schema.sql`) e Realtime nas tabelas certas
+2. Criar usuários por papel em Auth + `profiles` (não compartilhar conta admin)
 3. Configurar webhook com HTTPS + validação de token no servidor L.A.
-4. Não commitar `la-config.js` (chaves ORS e webhook)
+4. Não commitar `la-config.js` (anon key, ORS, webhook)
 
 ---
 
 ## SSO / login único empresa
 
-**Não implementado nesta entrega.** Hoje: Firebase Email/Password.
+**Não implementado nesta entrega.** Hoje: Supabase Email/Password.
 
-Para SSO (Google Workspace, SAML, custom token da plataforma L.A.):
+Para SSO (Google Workspace, SAML, JWT da plataforma L.A.):
 
-1. Mentor define provedor (Firebase Auth + Custom Token ou OAuth)
-2. Mapear usuário da plataforma → `/users/{uid}/role`
-3. Substituir telas de login em `index.html` e `painel.html` por fluxo unificado
+1. Mentor define provedor (Supabase Auth OAuth ou JWT custom)
+2. Mapear usuário da plataforma → `profiles.role`
+3. Ajustar telas de login em `index.html` e `painel.html`
 
 Podemos fazer em fase 2 assim que houver spec da API de identidade da plataforma.
 
@@ -138,7 +138,7 @@ Podemos fazer em fase 2 assim que houver spec da API de identidade da plataforma
 | Config | Onde |
 |--------|------|
 | `LA_CONFIG.AMBIENTE` | `la-config.js` (`dev` / `homolog` / `prod`) |
-| Firebase | Um projeto por ambiente (recomendado) ou prefixo nos nós (não usado hoje) |
+| Supabase | Um projeto por ambiente (recomendado) |
 | GitHub Pages | Deploy web atual |
 | APK | `la-controle-capacitor` → Android Studio |
 
@@ -147,9 +147,9 @@ Podemos fazer em fase 2 assim que houver spec da API de identidade da plataforma
 ## Como rodar localmente
 
 1. Clonar o repositório
-2. `cp la-config.example.js la-config.js` e preencher `ORS_KEY` (rotas no mapa)
+2. `cp la-config.example.js la-config.js` e preencher `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ORS_KEY`
 3. Servir a pasta (Live Server, `npx serve`, ou GitHub Pages)
-4. Login com usuário cadastrado no Firebase
+4. Login com usuário cadastrado no Supabase Auth (+ linha em `profiles`)
 
 **APK:** ver `CAPACITOR-PLANO.md` — build fora do OneDrive se Gradle travar.
 
@@ -161,8 +161,9 @@ Podemos fazer em fase 2 assim que houver spec da API de identidade da plataforma
 |---------|----------|
 | `LA-CONTROLE-SPEC.md` | Especificação funcional completa |
 | `INTEGRACAO-PLATAFORMA.md` | Contrato JSON do webhook |
-| `CADASTRO-FIREBASE.md` | Motoristas, frota, unidades |
-| `FIREBASE-PERFIS.md` | Papéis e regras |
+| `CADASTRO-SUPABASE.md` | Motoristas, frota, unidades |
+| `SUPABASE-PERFIS.md` | Papéis e RLS |
+| `SUPABASE-MIGRACAO.md` | Setup do projeto Supabase |
 | `SEGURANCA-PRODUCAO.md` | Checklist go-live |
 | `TRABALHO-UNICO.md` | Fluxo de trabalho da equipe |
 
@@ -170,5 +171,5 @@ Podemos fazer em fase 2 assim que houver spec da API de identidade da plataforma
 
 ## Contato técnico / dúvidas
 
-Lucas — repositório e Firebase `la-controle` já configurados para testes.  
+Lucas — repositório e projeto Supabase configurados para testes.  
 Para conectar à plataforma L.A.: enviar URL do webhook + formato de resposta esperado.

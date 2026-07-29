@@ -131,7 +131,7 @@ function mesclarParadasRotaFixa(lista) {
     return lista;
 }
 
-function carregarUnidadesFirebase() {
+function carregarUnidades() {
     return laCarregarUnidades().then(function (val) {
         if (!val) return UNIDADES_LA.slice();
         const lista = Object.entries(val).map(function (entry) {
@@ -255,7 +255,7 @@ async function initOperation() {
     if (typeof atualizarBarraViagem === 'function') atualizarBarraViagem();
     proximaTela('tela-veiculo', 'tela-mapa');
     mapFollowCar = true;
-    unidadesLista = await carregarUnidadesFirebase();
+    unidadesLista = await carregarUnidades();
     const base = unidadesLista.find(u => u.matriz) || unidadesLista[0];
     const centro = base ? [base.lat, base.lng] : [-23.612783, -46.665663];
     const pin = L.divIcon({ className: 'car-pin-wrap', html: '<div class="car-pin"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });

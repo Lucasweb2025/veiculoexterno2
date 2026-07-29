@@ -1,36 +1,27 @@
-# Segurança — antes do push no GitHub
+﻿# Segurança — L.A. Controle
 
-## O que NÃO deve ir pro repositório
+## O que **não** fazer
 
-| Arquivo | Conteúdo |
-|---------|----------|
-| `la-config.js` | Chave OpenRouteService (`ORS_KEY`) |
-| `.env` | Qualquer segredo |
-| Senhas em `.md` / `.html` | Use só Firebase Console |
+| Evitar | Por quê |
+|--------|---------|
+| Senhas em `.md` / `.html` | Use só Supabase Authentication |
+| Commitar `la-config.js` | Contém anon key, ORS, webhook |
+| Commitar **service_role** | Acesso total ao banco |
 
-O `.gitignore` já bloqueia `la-config.js`.
+## Login
 
-## Login do app
+- Senha **somente** no Supabase Authentication.
+- Papel em `profiles` (ver `docs/SUPABASE-PERFIS.md`).
 
-- Senha **somente** no Firebase Authentication (usuário `admin@lacustom.test` ou o que você cadastrou).
-- Se o repositório já teve senha fixa no HTML no passado: **troque a senha** no Firebase Console e gere **nova chave ORS** no OpenRouteService.
+## Chaves
 
-## Configurar ORS localmente
+- `SUPABASE_ANON_KEY` — pública no cliente; proteção = **RLS**
+- `ORS_KEY` — rotas; não versionar
+- Webhook — HTTPS + Bearer no servidor L.A.
 
-```bash
-copy la-config.example.js la-config.js
-```
+## Checklist
 
-Edite `la-config.js` e coloque sua `ORS_KEY` (só na sua máquina).
-
-## GitHub Pages (repositório público)
-
-O arquivo `la-config.js` não sobe no Git. Duas opções:
-
-1. **GitHub Actions** — em Settings → Secrets → `ORS_KEY`, use o workflow em `.github/workflows/pages.yml` (gera `la-config.js` no deploy).
-2. **Sem Actions** — o app funciona com GPS bruto; snap/rotas ORS ficam desativados até configurar deploy com secret.
-
-## Firebase
-
-- Publique regras `auth != null` (`database.rules.json`).
-- Não use senha fixa no HTML.
+- [ ] `la-config.js` no `.gitignore`
+- [ ] RLS aplicado (`supabase/schema.sql`)
+- [ ] Usuários com `profiles.role` correto
+- [ ] Detalhes: `docs/SEGURANCA-PRODUCAO.md`
