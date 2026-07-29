@@ -4,26 +4,27 @@ Use antes de liberar motoristas e gestores reais.
 
 ---
 
-## Firebase Realtime Database
+## Supabase (Postgres + RLS)
 
-- [ ] Publicar `database.rules.json` no Console → Realtime Database → Regras
-- [ ] Confirmar que regra temporária `auth != null` foi removida
-- [ ] Testar: motorista **não** lê `/trips` de outros; gestor **não** cria viagem
-- [ ] Backup/export periódico dos dados (Console ou script)
+- [ ] `supabase/schema.sql` aplicado (RLS ligado em todas as tabelas)
+- [ ] Realtime só nas tabelas necessárias (`trips`, `vehicle_issues`, `vehicle_maintenance`, `vehicles`)
+- [ ] Testar: motorista não acessa painel; gestor não inicia corrida
+- [ ] Backup/export periódico (Dashboard ou `pg_dump`)
 
 ## Authentication
 
 - [ ] Um usuário por pessoa (evitar conta compartilhada)
-- [ ] Senhas fortes; considerar reset periódico
-- [ ] Desativar usuários que saíram (`user-disabled`)
-- [ ] Papéis só em `/users/{uid}/role` — gestor altera, motorista não
+- [ ] Senhas fortes
+- [ ] Desativar usuários que saíram
+- [ ] Papéis só em `profiles` — ver `SUPABASE-PERFIS.md`
 
 ## Chaves e segredos
 
-- [ ] `la-config.js` no `.gitignore` (ORS_KEY, WEBHOOK_URL, API_KEY)
+- [ ] `la-config.js` no `.gitignore` (`SUPABASE_ANON_KEY`, `ORS_KEY`, `WEBHOOK_URL`)
+- [ ] Nunca commitar **service_role** key
 - [ ] Rotacionar chave OpenRouteService se vazou
-- [ ] Webhook da plataforma: HTTPS + validar `Bearer` no servidor
-- [ ] Firebase API key é pública no cliente — segurança vem das **regras RTDB**
+- [ ] Webhook: HTTPS + validar `Bearer` no servidor L.A.
+- [ ] Anon key é pública no cliente — segurança vem do **RLS**
 
 ## App e painel
 
@@ -40,14 +41,13 @@ Use antes de liberar motoristas e gestores reais.
 
 - [ ] Definir quem é admin/gestor
 - [ ] Processo para resolver `vehicle_issues` com urgência `nao_usar`
-- [ ] Ambiente `homolog` separado antes de `prod`
+- [ ] Ambiente `homolog` separado antes de `prod` (projeto Supabase separado recomendado)
 
 ---
 
-## Publicar regras (passo a passo)
+## Conferir RLS (passo a passo)
 
-1. Firebase Console → projeto `la-controle`
-2. Realtime Database → **Regras**
-3. Colar conteúdo de `database.rules.json`
-4. **Publicar**
-5. Testar login motorista e gestor em abas anônimas
+1. Dashboard → **Authentication** → usuários de teste
+2. SQL → confirmar linhas em `profiles`
+3. Testar login motorista e gestor em abas anônimas
+4. Advisors: Dashboard → Database → Advisors (ou MCP `get_advisors`)

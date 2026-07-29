@@ -346,10 +346,10 @@
         }
 
         async function carregarCadastrosEmpresa() {
-            await Promise.all([carregarFleetFirebase(), carregarMotoristasFirebase()]);
+            await Promise.all([carregarFleet(), carregarMotoristas()]);
         }
 
-        function carregarFleetFirebase() {
+        function carregarFleet() {
             return laCarregarFleet().then(function (val) {
                 if (!val) {
                     fleet = FLEET_PADRAO.slice();
@@ -371,7 +371,7 @@
             });
         }
 
-        function carregarMotoristasFirebase() {
+        function carregarMotoristas() {
             return laCarregarMotoristas().then(function (val) {
                 let nomes = MOTORISTAS_PADRAO.slice();
                 if (val) {

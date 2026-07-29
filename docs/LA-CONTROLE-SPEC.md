@@ -1,7 +1,7 @@
-# Especificação — L.A. Controle de Frota
+﻿# Especificação — L.A. Controle de Frota
 
 Versão: **1.0** (após testes de rua 28/05/2026)  
-App motorista: `index.html` · Painel: `painel.html` · Banco: Firebase `la-controle`
+App motorista: `index.html` · Painel: `painel.html` · Banco: Supabase `ccysxafhvgqrjlofvavp`
 
 ---
 
@@ -19,7 +19,7 @@ Sistema para motoristas da L.A. registrarem deslocamentos (origem → destinos f
 
 | Papel | Interface | Autenticação |
 |-------|-----------|--------------|
-| Motorista | App mapa / corrida | Firebase e-mail + senha |
+| Motorista | App mapa / corrida | Supabase e-mail + senha |
 | Gestão | Painel telemetria | Mesmo tipo (conta pode ser igual ou separada no futuro) |
 
 ---
@@ -28,14 +28,14 @@ Sistema para motoristas da L.A. registrarem deslocamentos (origem → destinos f
 
 ### AUTH-01 — Login motorista e painel
 
-- **Quero** informar e-mail e senha cadastrados no Firebase
+- **Quero** informar e-mail e senha cadastrados no Supabase
 - **Para** acessar dados da frota com segurança
 
 **Critérios de aceite:**
 
 - [ ] Campos **E-mail** e **Senha** visíveis
 - [ ] Senha incorreta → mensagem clara (sem expor senha no código)
-- [ ] Sessão persiste ao recarregar (token Firebase)
+- [ ] Sessão persiste ao recarregar (token Supabase)
 - [ ] Logout encerra sessão
 
 ### AUTH-02 — Banco protegido
@@ -44,7 +44,7 @@ Sistema para motoristas da L.A. registrarem deslocamentos (origem → destinos f
 
 **Critérios de aceite:**
 
-- [ ] Regras RTDB: `auth != null`
+- [ ] RLS Postgres ativo (`supabase/schema.sql`)
 - [ ] Sem login, `trips` e `vehicles` inacessíveis
 
 ---
@@ -70,7 +70,7 @@ Sistema para motoristas da L.A. registrarem deslocamentos (origem → destinos f
 - [ ] Botão **Finalizar corrida** sempre visível (parte inferior)
 - [ ] GPS com precisão aceitável (filtro &lt; 60 m)
 - [ ] Linha do trajeto no mapa
-- [ ] Status veículo `EM MOVIMENTO` no Firebase
+- [ ] Status veículo `EM MOVIMENTO` no Supabase
 - [ ] Ao finalizar: grava em `trips`, odômetro atualizado, status `DISPONÍVEL`
 
 ### MOT-03 — Finalizar corrida
@@ -188,7 +188,7 @@ Sistema para motoristas da L.A. registrarem deslocamentos (origem → destinos f
 
 **Critérios de aceite:**
 
-- [x] Lista em tempo real (`trips` Firebase)
+- [x] Lista em tempo real (`trips` Supabase)
 - [x] Ordem recente primeiro
 
 ### PAINEL-02 — Ver rota
@@ -290,12 +290,12 @@ Sistema para motoristas da L.A. registrarem deslocamentos (origem → destinos f
 
 - [x] Authentication: e-mail/senha no Console
 - [x] Papel em `/users/{uid}/role`: `motorista`, `gestor`, `admin`
-- [x] Regras RTDB (`database.rules.json`)
+- [x] RLS Postgres (`supabase/schema.sql`)
 - [x] App valida `motorista` ou `admin`
 - [x] Painel valida `gestor` ou `admin`
 - [x] Salvamento atômico ao finalizar corrida
 
-**Configuração:** `FIREBASE-PERFIS.md`
+**Configuração:** `Supabase-PERFIS.md`
 
 ---
 
@@ -307,13 +307,13 @@ Sistema para motoristas da L.A. registrarem deslocamentos (origem → destinos f
 
 **Critérios de aceite:**
 
-- [x] Login só Firebase Auth
+- [x] Login só Supabase Auth
 - [x] `la-config.js` no `.gitignore`
 - [x] Deploy Pages pode usar secret `ORS_KEY` (Actions)
 
 ---
 
-## Dados — contrato `trip` (Firebase `trips`)
+## Dados — contrato `trip` (Supabase `trips`)
 
 | Campo | Tipo | Obrigatório |
 |-------|------|-------------|
@@ -338,7 +338,7 @@ Sistema para motoristas da L.A. registrarem deslocamentos (origem → destinos f
 | APK 6B + tela bloqueada | GPS em segundo plano; rota contínua no painel ✅ |
 | Metrô / túnel | Sem satélite; `MOT-04` retoma ao sair (tela ligada) |
 | Linha tremida no mapa | GPS bruto; ORS suaviza se chave configurada |
-| Qualquer usuário Auth | Acesso total ao RTDB (regras simples Fase 3) |
+| Qualquer usuário Auth | Acesso conforme RLS + `profiles.role` |
 
 ---
 

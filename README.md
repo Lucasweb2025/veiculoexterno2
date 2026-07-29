@@ -100,6 +100,9 @@ la-config.example.js   — modelo de config (segredos fora do Git)
 |---------|----------|
 | `docs/PARA-O-MENTOR.md` | Entrega para integração |
 | `docs/SUPABASE-MIGRACAO.md` | Setup Supabase (schema, Auth, Realtime) |
+| `docs/SUPABASE-PERFIS.md` | Papéis motorista / gestor / admin |
+| `docs/CADASTRO-SUPABASE.md` | Frota, motoristas, unidades |
 | `docs/SEGURANCA-PRODUCAO.md` | Checklist go-live |
 | `docs/REFATORACAO-PLANO.md` | Etapas da refatoração |
+| `docs/arquivo/` | Docs históricos da era Firebase |
 | `TRABALHO-UNICO.md` | Fluxo de trabalho da equipe |

@@ -1,4 +1,4 @@
-# Google Play — L.A. Controle (guia prático)
+﻿# Google Play — L.A. Controle (guia prático)
 
 Conta desenvolvedor: **criada** ✅  
 App ID Android: `br.com.lacustom.controle`  
@@ -15,7 +15,7 @@ Quando você mandar a documentação oficial da Play, encaixamos aqui. Este arqu
 | APK debug (teste WhatsApp) | ✅ |
 | Permissão GPS no manifest | ✅ |
 | Ícone amarelo/preto L.A. | ✅ |
-| Política Firebase (login + localização) | Ver seção 5 |
+| Política Supabase (login + localização) | Ver seção 5 |
 
 ---
 
@@ -58,10 +58,10 @@ Quando você mandar a documentação oficial da Play, encaixamos aqui. Este arqu
 O app coleta:
 
 - **Localização** — durante corridas ativas (motorista)
-- **E-mail** — login Firebase
-- **Dados de viagem** — km, rota, destino, motorista, veículo (Firebase)
+- **E-mail** — login Supabase
+- **Dados de viagem** — km, rota, destino, motorista, veículo (Supabase)
 
-Armazenamento: Google Firebase (`la-controle`).  
+Armazenamento: Supabase (`ccysxafhvgqrjlofvavp`).  
 Não vendemos dados a terceiros.
 
 *(Substitua por URL da política da L.A. Custom quando o jurídico/site tiver a página.)*

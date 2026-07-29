@@ -1,4 +1,4 @@
-# L.A. Controle — pasta única
+﻿# L.A. Controle — pasta única
 
 Tudo fica em **`veiculoexterno2/`** (Git + web + Android).
 
@@ -10,10 +10,10 @@ Tudo fica em **`veiculoexterno2/`** (Git + web + Android).
 veiculoexterno2/
 ├── index.html          App motorista
 ├── painel.html         Painel gestor
-├── la-firebase.js      Firebase
+├── assets/js/          la-supabase, la-store, motorista…
 ├── la-integracao.js    Webhook plataforma L.A.
-├── la-config.js        ORS + webhook (local, não vai pro Git)
-├── database.rules.json Regras RTDB
+├── la-config.js        Supabase + ORS (local, não vai pro Git)
+├── supabase/           schema.sql + seed.sql
 ├── docs/               Documentação (comece por PARA-O-MENTOR.md)
 ├── la-controle-capacitor/   APK Android
 │   ├── www/            (gerado — não editar)

@@ -1,4 +1,4 @@
-# Ideias futuras — L.A. Controle de Frota
+﻿# Ideias futuras — L.A. Controle de Frota
 
 Documento de referência (não implementado ainda). Atualizado em maio/2026.
 
@@ -12,7 +12,7 @@ Documento de referência (não implementado ainda). Atualizado em maio/2026.
 - Instalar/atualizar o app na sede (Wi‑Fi) → baixa pacote de mapa da região (tiles ou PMTiles).
 - Motorista escolhe destino (Stuttgart, McLaren, HUB, Sede, Outros).
 - **Iniciar corrida** → GPS do celular forma a linha no mapa (offline ou online).
-- **Finalizar** → salva linha + km + motorista + destino no Firebase.
+- **Finalizar** → salva linha + km + motorista + destino no Supabase.
 
 **Camadas:**
 | Camada | Função | Offline? |
@@ -53,4 +53,4 @@ Documento de referência (não implementado ainda). Atualizado em maio/2026.
 
 ## 4. Internet vs GPS (ver discussão no chat)
 
-**Conclusão:** manter GPS para posição; internet para mapa, Firebase e snap nas ruas. 3G/4G não substitui GPS.
+**Conclusão:** manter GPS para posição; internet para mapa, Supabase e snap nas ruas. 3G/4G não substitui GPS.

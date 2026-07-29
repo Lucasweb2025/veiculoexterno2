@@ -13,7 +13,7 @@ window.LA_CONFIG.AMBIENTE = 'homolog';
 ```
 
 - Se `WEBHOOK_URL` estiver vazio, nenhum POST é enviado.
-- Falha de rede **não** impede salvar no Firebase.
+- Falha de rede **não** impede salvar no Supabase.
 
 ---
 
@@ -97,7 +97,7 @@ Valores de `urgencia`: `leve`, `atencao`, `nao_usar`.
 ## Resposta esperada
 
 - **2xx** — sucesso (corpo livre)
-- **4xx/5xx** — app registra aviso no console; dados já estão no Firebase
+- **4xx/5xx** — app registra aviso no console; dados já estão no Supabase
 
 Recomenda-se idempotência por `tripId` / `issueId` no servidor L.A.
 
@@ -114,7 +114,7 @@ Recomenda-se idempotência por `tripId` / `issueId` no servidor L.A.
 
 ## Próximos passos (fase 2)
 
-- Retry com fila (Cloud Functions / Firestore dead-letter)
+- Retry com fila (Edge Function / dead-letter)
 - Assinatura HMAC no header (`X-LA-Signature`)
 - Pull API (GET viagens) além do push webhook
-- SSO: token da plataforma → Firebase Custom Auth
+- SSO: token da plataforma → Supabase Auth (OAuth / custom JWT)

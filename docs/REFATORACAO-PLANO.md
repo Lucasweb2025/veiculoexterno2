@@ -6,7 +6,7 @@ Objetivo: código organizado para handoff ao sênior, **sem quebrar** produção
 
 1. Uma etapa por vez — testar motorista, gestor e APK após cada uma.
 2. `index.html` e `painel.html` continuam sendo as entradas até a etapa final.
-3. Firebase, GPS e corrida são as últimas áreas a modularizar.
+3. GPS e corrida foram modularizados por último; backend atual é só Supabase.
 4. Fonte em `src/` — deploy em `assets/` e raiz (HTML/JS).
 
 ---
@@ -17,8 +17,8 @@ Objetivo: código organizado para handoff ao sênior, **sem quebrar** produção
 |---|--------|-------|--------|
 | 0 | Este documento + `package.json` + `scripts/` | Baixo | ✅ |
 | 1 | CSS → `src/styles/` + `assets/css/` | Baixo | ✅ |
-| 2 | Utilitários (`escHtml`, `formatarTempo`, datas) → `src/shared/utils.js` | Baixo | ✅ |
-| 3 | Firebase → `src/shared/firebase/la-firebase.js` | Baixo | ✅ |
+| 2 | Utilitários → `src/shared/utils.js` | Baixo | ✅ |
+| 3 | Backend compartilhado (`la-firebase` → depois Supabase) | Baixo | ✅ |
 | 4 | Login motorista → `src/motorista/auth.js` | Médio | ✅ |
 | 5 | Painel gestor → `src/gestor/gestor-auth.js` | Médio | ✅ |
 | 6 | Destinos / mapa (sem GPS de corrida) | Médio | ✅ |
@@ -91,5 +91,5 @@ APK: `BUILD-APK.bat` (OneDrive) → Android Studio Clean → Run.
 
 - Contrato de dados: `docs/PARA-O-MENTOR.md`
 - Migração Supabase: `docs/SUPABASE-MIGRACAO.md`
-- Regras: `database.rules.json`
-- Refatoração em andamento — ver tabela de etapas acima.
+- RLS: `supabase/schema.sql`
+- Histórico Firebase: `docs/arquivo/`
