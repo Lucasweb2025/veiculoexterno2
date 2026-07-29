@@ -2,17 +2,20 @@
 
 App para motoristas e painel para gestores — GPS, viagens, alertas de veículo.
 
-**Supabase:** https://ccysxafhvgqrjlofvavp.supabase.co  
-**Repositório:** [github.com/Lucasweb2025/veiculoexterno2](https://github.com/Lucasweb2025/veiculoexterno2)
+**Backend:** [Supabase](https://ccysxafhvgqrjlofvavp.supabase.co) (Auth + Postgres + Realtime)  
+**Repositório:** [github.com/Lucasweb2025/veiculoexterno2](https://github.com/Lucasweb2025/veiculoexterno2)  
+**PR / validação:** [#1 — Migração Supabase](https://github.com/Lucasweb2025/veiculoexterno2/pull/1)
 
 ---
 
-## Links (produção web)
+## Links (web)
 
 | Tela | URL |
 |------|-----|
 | App motorista | https://lucasweb2025.github.io/veiculoexterno2/ |
 | Painel gestor | https://lucasweb2025.github.io/veiculoexterno2/painel.html |
+
+> Em produção web, o deploy precisa de `la-config.js` local (não versionado) com a anon key do Supabase.
 
 ---
 
@@ -22,13 +25,16 @@ Leia **`docs/PARA-O-MENTOR.md`** e **`docs/SUPABASE-MIGRACAO.md`**.
 
 Tabelas principais:
 
-- `trips` — viagens finalizadas
-- `vehicle_issues` — alertas de veículo
-- `vehicles` — status e odômetro
-- `motoristas` e `fleet` — cadastros
-- `profiles` — perfil (`motorista`, `gestor`, `admin`)
+| Tabela | Uso |
+|--------|-----|
+| `profiles` | papéis (`motorista`, `gestor`, `admin`) |
+| `fleet` / `motoristas` / `unidades` | cadastros |
+| `vehicles` | status, odômetro, posição |
+| `trips` | viagens finalizadas |
+| `vehicle_issues` | alertas de veículo |
+| `vehicle_maintenance` | revisão / manutenção |
 
-Webhook opcional (`la-integracao.js`) — só ativa se `WEBHOOK_URL` estiver em `la-config.js`.
+Webhook opcional (`la-integracao.js`) — ativa se `WEBHOOK_URL` estiver em `la-config.js`.
 
 ---
 
@@ -36,16 +42,30 @@ Webhook opcional (`la-integracao.js`) — só ativa se `WEBHOOK_URL` estiver em 
 
 ```bash
 cp la-config.example.js la-config.js
-# Edite ORS_KEY (rotas no mapa) — opcional para teste básico
 ```
 
-Abra `index.html` ou `painel.html` no navegador (ou use Live Server).
+Em `la-config.js`:
 
-Perfis de login: ver **`docs/FIREBASE-PERFIS.md`**.
+1. `SUPABASE_URL` + `SUPABASE_ANON_KEY` (Dashboard → Settings → API)
+2. `ORS_KEY` — opcional (rotas no mapa)
+
+Abra `index.html` ou `painel.html` no navegador (Live Server).
+
+Papéis: cadastre usuários no **Supabase Auth** e linhas em `profiles` (ver `docs/SUPABASE-MIGRACAO.md`).
+
+```bash
+npm run sync:assets   # após editar arquivos em src/
+```
 
 ---
 
 ## APK Android
+
+```bash
+BUILD-APK.bat
+```
+
+Ou manualmente:
 
 ```bash
 cd la-controle-capacitor
@@ -55,27 +75,21 @@ npx cap open android
 ```
 
 Android Studio → **Build → Build APK**.  
-Se o Gradle travar no OneDrive, copie `la-controle-capacitor` para `C:\Projetos\`.
+Se o Gradle travar no OneDrive, copie o projeto para `C:\Projetos\`.
 
 ---
 
 ## Estrutura
 
 ```
-src/styles/                — fonte CSS (editar aqui)
-src/shared/utils.js        — utilitários compartilhados
-src/shared/supabase/       — auth Supabase
-src/shared/la-store.js     — CRUD + Realtime
-assets/css/ / assets/js/   — publicados (npm run sync:assets)
-index.html, painel.html    — telas web
-la-integracao.js           — webhook (opcional)
-supabase/schema.sql        — Postgres + RLS
-docs/                      — documentação
-la-controle-capacitor/     — projeto Android
-```
-
-```bash
-npm run sync:assets   # após editar src/
+src/shared/supabase/   — auth e persistência
+src/shared/la-store.js — fleet, trips, listeners
+src/motorista/         — mapa, GPS, corrida
+supabase/schema.sql    — Postgres + RLS
+supabase/seed.sql      — cadastros iniciais
+index.html             — app motorista
+painel.html            — painel gestor
+la-config.example.js   — modelo de config (segredos fora do Git)
 ```
 
 ---
@@ -85,6 +99,7 @@ npm run sync:assets   # após editar src/
 | Arquivo | Conteúdo |
 |---------|----------|
 | `docs/PARA-O-MENTOR.md` | Entrega para integração |
-| `docs/SUPABASE-MIGRACAO.md` | Setup Supabase |
+| `docs/SUPABASE-MIGRACAO.md` | Setup Supabase (schema, Auth, Realtime) |
 | `docs/SEGURANCA-PRODUCAO.md` | Checklist go-live |
+| `docs/REFATORACAO-PLANO.md` | Etapas da refatoração |
 | `TRABALHO-UNICO.md` | Fluxo de trabalho da equipe |
