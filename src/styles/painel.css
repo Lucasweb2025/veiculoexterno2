@@ -1,0 +1,373 @@
+﻿* { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            min-height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--gray-bg);
+            color: var(--black);
+        }
+        .painel-shell {
+            max-width: 520px;
+            margin: 0 auto;
+            min-height: 100dvh;
+            background: var(--white);
+            box-shadow: 0 0 24px rgba(0,0,0,0.06);
+        }
+
+        /* â€”â€” Login (igual app motorista) â€”â€” */
+        #painel-login {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100dvh;
+            padding: 24px 20px;
+            background: var(--gray-bg);
+        }
+        .login-wrap { width: 100%; max-width: 360px; text-align: center; }
+        .login-logo { height: 56px; margin-bottom: 16px; }
+        .login-sub {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        .login-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+            text-align: left;
+        }
+        .field-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+        }
+        .input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--gray-border);
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 14px;
+            outline: none;
+            background: var(--white);
+            color: var(--black);
+        }
+        .input:focus { border-color: var(--yellow); }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .btn-yellow {
+            background: var(--yellow);
+            color: var(--black);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .btn-yellow:active { background: var(--yellow-hover); }
+        .btn-ghost {
+            display: block;
+            width: 100%;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-top: 16px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* â€”â€” Painel logado â€”â€” */
+        #painel-content { display: none; flex-direction: column; min-height: 100dvh; }
+        .top-bar {
+            background: var(--black);
+            color: var(--white);
+            padding: calc(14px + var(--safe-top)) 16px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .top-bar h1 { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+        .top-bar .sub { font-size: 0.7rem; opacity: 0.75; font-weight: 400; margin-top: 2px; }
+        .top-logo { height: 36px; display: block; margin-bottom: 4px; }
+        .top-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .btn-top {
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: var(--white);
+        }
+        .btn-top-danger { border-color: rgba(231,76,60,0.5); color: #ffb4a8; }
+
+        .main-painel {
+            flex: 1;
+            padding: 16px 16px calc(20px + var(--safe-bottom));
+            background: var(--gray-bg);
+        }
+        .section-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            padding-left: 4px;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            border: 1px solid var(--gray-border);
+            margin-bottom: 12px;
+        }
+        .card-filtros-title {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--black);
+            margin-bottom: 12px;
+            letter-spacing: 0.05em;
+        }
+        .filtro-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 400px) { .filtro-grid { grid-template-columns: 1fr; } }
+        .filtro-label {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .filtro-input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 2px solid var(--gray-border);
+            background: var(--white);
+            color: var(--black);
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .filtro-input:focus { border-color: var(--yellow); }
+        .filtro-btns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .btn-filtro {
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-filtro-aplicar { background: var(--yellow); color: var(--black); }
+        .btn-filtro-limpar {
+            background: var(--white);
+            color: var(--text-muted);
+            border: 2px solid var(--gray-border);
+        }
+        .btn-filtro-exportar {
+            background: var(--black);
+            color: var(--yellow);
+            border: 2px solid var(--black);
+        }
+
+        .lista-alertas { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+        .issue-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 14px 16px;
+            border: 1px solid var(--gray-border);
+            border-left: 4px solid #e65100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .issue-card.critico { border-left-color: var(--danger); background: #fff8f8; }
+        .issue-card.resolvido { opacity: 0.65; border-left-color: #9e9e9e; }
+        .issue-car { font-size: 0.95rem; font-weight: 800; }
+        .issue-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+        .issue-meta b { color: var(--black); }
+        .issue-badge {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .issue-badge.critico { background: #ffebee; color: var(--danger); }
+        .btn-issue-resolver {
+            margin-top: 10px;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 10px;
+            background: var(--yellow);
+            font-size: 0.72rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .manut-form-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+        .manut-form-grid .filtro-input { width: 100%; }
+        .lista-manutencoes { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+        .manut-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 14px 16px;
+            border: 1px solid var(--gray-border);
+            border-left: 4px solid #2e7d32;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .manut-titulo { font-size: 0.95rem; font-weight: 800; }
+        .manut-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+        .btn-manut-salvar {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: var(--yellow);
+            font-size: 0.8rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .lista-viagens { display: flex; flex-direction: column; gap: 10px; }
+        .trip-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--gray-border);
+            border-left: 4px solid var(--yellow);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .trip-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .trip-car { font-size: 1.05rem; font-weight: 800; color: var(--black); }
+        .trip-driver { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
+        .trip-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+        .trip-meta b { color: var(--black); font-weight: 600; }
+        .trip-km { font-size: 1.1rem; font-weight: 800; color: var(--black); white-space: nowrap; }
+        .btn-ver-rota {
+            margin-top: 8px;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            background: var(--yellow);
+            color: var(--black);
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .empty-msg {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 32px 16px;
+            font-size: 0.9rem;
+        }
+        .paginacao {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 4px;
+            padding: 14px 16px;
+            background: var(--white);
+            border-radius: 16px;
+            border: 1px solid var(--gray-border);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .paginacao-info {
+            flex: 1;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            line-height: 1.35;
+        }
+        .paginacao-info b { color: var(--black); }
+        .btn-pagina {
+            flex-shrink: 0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: 2px solid var(--gray-border);
+            background: var(--white);
+            color: var(--black);
+        }
+        .btn-pagina:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .btn-pagina:not(:disabled):active { background: var(--gray-bg); }
+
+        /* â€”â€” Modal mapa â€”â€” */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .modal-box {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow: auto;
+        }
+        .modal-close {
+            float: right;
+            border: none;
+            background: none;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            cursor: pointer;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .modal-titulo {
+            font-size: 0.9rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--black);
+            margin-bottom: 12px;
+            clear: both;
+        }
+        #mapa-modal {
+            height: 360px;
+            width: 100%;
+            border-radius: 12px;
+            border: 2px solid var(--gray-border);
+        }

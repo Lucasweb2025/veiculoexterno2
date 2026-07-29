@@ -7,10 +7,10 @@ Documento de entrega para o mentor / equipe de plataforma L.A.
 | **App** | https://lucasweb2025.github.io/veiculoexterno2/ |
 | **Painel** | https://lucasweb2025.github.io/veiculoexterno2/painel.html |
 | **Código** | [github.com/Lucasweb2025/veiculoexterno2](https://github.com/Lucasweb2025/veiculoexterno2) |
-| **Firebase** | projeto `la-controle` |
+| **Supabase** | `https://ccysxafhvgqrjlofvavp.supabase.co` (único backend — ver `SUPABASE-MIGRACAO.md`) |
 | **Pasta do código** | `veiculoexterno2/` |
 
-> O app e o painel já estão prontos. A integração com a plataforma L.A. fica com a equipe de vocês — leiam os dados no Firebase ou usem o webhook opcional (`INTEGRACAO-PLATAFORMA.md`).
+> O app e o painel já estão prontos. A integração com a plataforma L.A. fica com a equipe de vocês — leiam os dados no **Postgres (Supabase)** ou usem o webhook opcional (`INTEGRACAO-PLATAFORMA.md`).
 
 ---
 
@@ -22,9 +22,10 @@ Sistema de controle de frota com:
 |------------|---------|--------|
 | App motorista | `index.html` | Login, escolha motorista/veículo, GPS, corrida, alertas de veículo |
 | Painel gestor | `painel.html` | Histórico, filtros, mapa da rota, alertas, export CSV |
-| Firebase compartilhado | `la-firebase.js` | Auth, perfis, persistência de viagens e alertas |
+| Supabase | `src/shared/supabase/la-supabase.js` + `la-store.js` | Auth + Postgres + Realtime |
+| Backend loader | `src/shared/la-backend-loader.js` | Carrega SDK Supabase |
 | Integração webhook | `la-integracao.js` | POST para plataforma L.A. ao finalizar viagem ou reportar problema |
-| Regras RTDB | `database.rules.json` | Segurança por papel (motorista / gestor / admin) |
+| Schema / RLS | `supabase/schema.sql` | Segurança por papel (motorista / gestor / admin) |
 | Android (APK) | `la-controle-capacitor/` | Capacitor + GPS nativo |
 
 ---
@@ -32,34 +33,34 @@ Sistema de controle de frota com:
 ## Arquitetura (visão rápida)
 
 ```
-[App motorista / Painel]  →  Firebase Auth + Realtime Database
+[App motorista / Painel]  →  Supabase (Auth + Postgres + Realtime)
          │
          └── la-integracao.js  →  POST webhook (plataforma L.A.)
 ```
 
-Dados principais no Realtime Database:
+Setup: `docs/SUPABASE-MIGRACAO.md`.
 
-| Nó | Quem grava | Quem lê |
-|----|------------|---------|
-| `/users/{uid}/role` | gestor/admin | todos autenticados (próprio perfil) |
-| `/trips` | motorista (criação) | gestor |
-| `/vehicles/{id}` | motorista (status, posição, odômetro) | motorista + gestor |
-| `/vehicle_issues` | motorista (criação) | motorista + gestor |
-| `/motoristas` | gestor | motorista + gestor |
-| `/fleet` | gestor | motorista + gestor |
-| `/unidades` | gestor | motorista + gestor |
+Dados principais (Postgres):
+
+| Tabela | Quem grava | Quem lê |
+|--------|------------|---------|
+| `profiles` | gestor/admin | próprio perfil + gestores |
+| `trips` | motorista (RPC) | gestor + motorista |
+| `vehicles` | motorista (status, posição, odômetro) | autenticados |
+| `vehicle_issues` | motorista (criação) | autenticados |
+| `motoristas` / `fleet` / `unidades` | gestor | autenticados |
 
 ---
 
 ## Perfis de acesso
 
-Ver `FIREBASE-PERFIS.md`. Resumo:
+Ver `SUPABASE-MIGRACAO.md`. Resumo:
 
 - **motorista** → só `index.html`
 - **gestor** → só `painel.html`
 - **admin** → ambos
 
-Cadastro no Firebase Console (Authentication) + nó `/users/{uid}/role`.
+Cadastro: Supabase Authentication + tabela `profiles` (role).
 
 ---
 
@@ -68,15 +69,16 @@ Cadastro no Firebase Console (Authentication) + nó `/users/{uid}/role`.
 **Guia completo:** `INTEGRACAO-PLATAFORMA.md`
 
 1. Copiar `la-config.example.js` → `la-config.js`
-2. Preencher `WEBHOOK_URL` (endpoint que recebe POST JSON)
-3. Opcional: `PLATAFORMA_API_KEY` (enviado como `Authorization: Bearer …`)
+2. Preencher `SUPABASE_URL` + `SUPABASE_ANON_KEY`
+3. Preencher `WEBHOOK_URL` (endpoint que recebe POST JSON)
+4. Opcional: `PLATAFORMA_API_KEY` (enviado como `Authorization: Bearer …`)
 
 Eventos disparados automaticamente:
 
 | Evento | Quando |
 |--------|--------|
-| `viagem_finalizada` | Após salvar em `/trips` |
-| `alerta_veiculo` | Após salvar em `/vehicle_issues` |
+| `viagem_finalizada` | Após salvar em `trips` |
+| `alerta_veiculo` | Após salvar em `vehicle_issues` |
 
 Se o webhook falhar, os dados **permanecem no Firebase** (integração é best-effort).
 

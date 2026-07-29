@@ -1,0 +1,10 @@
+{
+  "name": "la-controle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "L.A. Controle de Frota — app motorista e painel gestor",
+  "scripts": {
+    "sync:assets": "node scripts/sync-assets.mjs",
+    "build:web": "node scripts/sync-assets.mjs"
+  }
+}

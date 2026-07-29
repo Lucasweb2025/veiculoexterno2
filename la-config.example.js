@@ -3,6 +3,11 @@
  * cp la-config.example.js la-config.js
  */
 window.LA_CONFIG = window.LA_CONFIG || {};
+
+/** Supabase — obrigatório (ver docs/SUPABASE-MIGRACAO.md) */
+window.LA_CONFIG.SUPABASE_URL = 'https://ccysxafhvgqrjlofvavp.supabase.co';
+window.LA_CONFIG.SUPABASE_ANON_KEY = ''; // anon key do Dashboard → Settings → API
+
 window.LA_CONFIG.ORS_KEY = '';
 
 /** Integração plataforma L.A. — URL que recebe POST JSON (ver docs/INTEGRACAO-PLATAFORMA.md) */
