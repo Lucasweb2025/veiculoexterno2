@@ -132,13 +132,13 @@ function mesclarParadasRotaFixa(lista) {
 }
 
 function carregarUnidadesFirebase() {
-    const db = laDb();
-    return new Promise(resolve => {
-        db.ref('unidades').once('value', snap => {
-            const val = snap.val();
-            if (!val) { resolve(UNIDADES_LA.slice()); return; }
-            const lista = Object.entries(val).map(([id, u]) => ({
-                id,
+    return laCarregarUnidades().then(function (val) {
+        if (!val) return UNIDADES_LA.slice();
+        const lista = Object.entries(val).map(function (entry) {
+            var id = entry[0];
+            var u = entry[1];
+            return {
+                id: id,
                 nome: u.nome || id,
                 nomeCurto: u.nomeCurto || u.nome || id,
                 endereco: u.endereco || '',
@@ -147,10 +147,10 @@ function carregarUnidadesFirebase() {
                 matriz: !!u.matriz,
                 paradaRota: !!u.paradaRota,
                 ordemRota: u.ordemRota != null ? parseInt(u.ordemRota, 10) : undefined
-            })).filter(u => !isNaN(u.lat) && !isNaN(u.lng));
-            resolve(mesclarParadasRotaFixa(lista.length ? lista : UNIDADES_LA.slice()));
-        }, () => resolve(UNIDADES_LA.slice()));
-    });
+            };
+        }).filter(function (u) { return !isNaN(u.lat) && !isNaN(u.lng); });
+        return mesclarParadasRotaFixa(lista.length ? lista : UNIDADES_LA.slice());
+    }).catch(function () { return UNIDADES_LA.slice(); });
 }
 
 function deveExibirUnidadeNoMapa(u, selId) {

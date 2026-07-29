@@ -24,6 +24,7 @@ Objetivo: código organizado para handoff ao sênior, **sem quebrar** produção
 | 6 | Destinos / mapa (sem GPS de corrida) | Médio | ✅ |
 | 7 | Corrida + GPS + backup | Alto | ✅ |
 | 8 | Vite bundle (opcional) | Médio | Pendente |
+| 9 | Supabase (Auth + Postgres + Realtime) | Alto | ✅ branch `supabase/migracao` |
 
 ---
 
@@ -36,7 +37,11 @@ veiculoexterno2/
 │   ├── shared/
 │   │   ├── utils.js
 │   │   ├── constants.js
-│   │   └── firebase/la-firebase.js
+│   │   ├── firebase/la-firebase.js
+│   │   ├── supabase/la-supabase.js
+│   │   ├── la-store.js
+│   │   └── la-backend-loader.js
+│   ├── supabase/          ← schema.sql + seed.sql
 │   ├── motorista/
 │   │   ├── motorista-auth.js
 │   │   ├── state.js
@@ -85,6 +90,7 @@ APK: `BUILD-APK.bat` (OneDrive) → Android Studio Clean → Run.
 
 ## Para o sênior
 
-- Contrato Firebase: `docs/PARA-O-MENTOR.md`
+- Contrato de dados: `docs/PARA-O-MENTOR.md`
+- Migração Supabase: `docs/SUPABASE-MIGRACAO.md`
 - Regras: `database.rules.json`
 - Refatoração em andamento — ver tabela de etapas acima.

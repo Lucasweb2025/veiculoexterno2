@@ -104,7 +104,7 @@ async function iniciarCorrida(carId, btn) {
     startTime = Date.now();
 
     configurarUiCorridaAtiva(btn);
-    laDb().ref('vehicles/' + carId + '/status').set('EM MOVIMENTO');
+    laSetVehicleStatus(carId, 'EM MOVIMENTO');
     window.addEventListener('beforeunload', alertaFechar);
     // Verde (rota ORS) só na pré-corrida — na corrida fica só a azul (trajeto GPS) + pin do destino
     limparRotaPlanejada();

@@ -36,6 +36,9 @@ if (existsSync(styles)) {
 copyOne(join(src, 'shared', 'utils.js'), join(root, 'assets', 'js', 'utils.js'));
 copyOne(join(src, 'shared', 'constants.js'), join(root, 'assets', 'js', 'constants.js'));
 copyOne(join(src, 'shared', 'firebase', 'la-firebase.js'), join(root, 'assets', 'js', 'la-firebase.js'));
+copyOne(join(src, 'shared', 'supabase', 'la-supabase.js'), join(root, 'assets', 'js', 'la-supabase.js'));
+copyOne(join(src, 'shared', 'la-store.js'), join(root, 'assets', 'js', 'la-store.js'));
+copyOne(join(src, 'shared', 'la-backend-loader.js'), join(root, 'assets', 'js', 'la-backend-loader.js'));
 
 copyDirJs('motorista');
 copyDirJs('gestor');

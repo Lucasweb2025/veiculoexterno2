@@ -4,6 +4,9 @@ la-config.js
 .env.*
 *.local.js
 
+# Cursor / MCP local
+.cursor/
+
 # Capacitor / Android — não versionar build nem deps
 la-controle-capacitor/node_modules/
 la-controle-capacitor/android/.gradle/

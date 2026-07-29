@@ -10,11 +10,9 @@
     <link rel="apple-touch-icon" href="https://i.ibb.co/27cxGcb1/lacustomlogotipo.png">
     <title>L.A. Controle</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="assets/js/la-firebase.js"></script>
     <script src="la-config.js"></script>
+    <script src="assets/js/la-backend-loader.js"></script>
+    <script src="assets/js/la-store.js"></script>
     <script src="la-integracao.js"></script>
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/constants.js"></script>
@@ -302,7 +300,9 @@
             if (!appNativo) navigator.serviceWorker.register('sw.js');
         }
 
-        const db = laDb();
+        let unsubOdometro = null;
+        let unsubRevisaoManut = null;
+        let unsubRevisaoIssues = null;
         const VEICULO_PROBLEMA_TIPOS = [
             { id: 'freio', label: 'Freio' },
             { id: 'barulho', label: 'Barulho' },
@@ -330,8 +330,6 @@
             freio: 'Freio', barulho: 'Barulho', pneu: 'Pneu',
             luz: 'Luz no painel', vazamento: 'Vazamento', outro: 'Outro'
         };
-        let handlerRevisaoManut = null;
-        let handlerRevisaoIssues = null;
         let revisaoCarIdAtual = null;
 
         function showScreen(id) {
@@ -352,52 +350,41 @@
         }
 
         function carregarFleetFirebase() {
-            return new Promise(function (resolve) {
-                laDb().ref('fleet').once('value', function (snap) {
-                    const val = snap.val();
-                    if (!val) {
-                        fleet = FLEET_PADRAO.slice();
-                        resolve();
-                        return;
-                    }
-                    const lista = Object.keys(val).map(function (id) {
-                        const v = val[id] || {};
-                        if (v.ativo === false) return null;
-                        return {
-                            id: id,
-                            nome: v.nome || id,
-                            foto: v.foto || FLEET_PADRAO[0].foto
-                        };
-                    }).filter(Boolean);
-                    fleet = lista.length ? lista : FLEET_PADRAO.slice();
-                    idx = Math.min(idx, Math.max(0, fleet.length - 1));
-                    resolve();
-                }, function () {
+            return laCarregarFleet().then(function (val) {
+                if (!val) {
                     fleet = FLEET_PADRAO.slice();
-                    resolve();
-                });
+                    return;
+                }
+                const lista = Object.keys(val).map(function (id) {
+                    const v = val[id] || {};
+                    if (v.ativo === false) return null;
+                    return {
+                        id: id,
+                        nome: v.nome || id,
+                        foto: v.foto || FLEET_PADRAO[0].foto
+                    };
+                }).filter(Boolean);
+                fleet = lista.length ? lista : FLEET_PADRAO.slice();
+                idx = Math.min(idx, Math.max(0, fleet.length - 1));
+            }).catch(function () {
+                fleet = FLEET_PADRAO.slice();
             });
         }
 
         function carregarMotoristasFirebase() {
-            return new Promise(function (resolve) {
-                laDb().ref('motoristas').once('value', function (snap) {
-                    const val = snap.val();
-                    let nomes = MOTORISTAS_PADRAO.slice();
-                    if (val) {
-                        nomes = Object.keys(val).map(function (id) {
-                            const m = val[id] || {};
-                            if (m.ativo === false) return null;
-                            return m.nome || id;
-                        }).filter(Boolean);
-                        if (!nomes.length) nomes = MOTORISTAS_PADRAO.slice();
-                    }
-                    renderizarGridMotoristas(nomes);
-                    resolve();
-                }, function () {
-                    renderizarGridMotoristas(MOTORISTAS_PADRAO);
-                    resolve();
-                });
+            return laCarregarMotoristas().then(function (val) {
+                let nomes = MOTORISTAS_PADRAO.slice();
+                if (val) {
+                    nomes = Object.keys(val).map(function (id) {
+                        const m = val[id] || {};
+                        if (m.ativo === false) return null;
+                        return m.nome || id;
+                    }).filter(Boolean);
+                    if (!nomes.length) nomes = MOTORISTAS_PADRAO.slice();
+                }
+                renderizarGridMotoristas(nomes);
+            }).catch(function () {
+                renderizarGridMotoristas(MOTORISTAS_PADRAO);
             });
         }
 
@@ -419,13 +406,12 @@
         }
 
         function mudar(n) {
-            if (currentOdoRef) currentOdoRef.off('value');
+            if (unsubOdometro) unsubOdometro();
             idx = (idx + n + fleet.length) % fleet.length;
             document.getElementById('car-render').innerHTML = `<img src="${fleet[idx].foto}" alt="">`;
             document.getElementById('car-name').innerText = fleet[idx].nome;
-            currentOdoRef = db.ref('vehicles/' + fleet[idx].id + '/odometer');
-            currentOdoRef.on('value', s => {
-                document.getElementById('car-odo').innerText = `OdÃ´metro: ${(s.val() || 0).toFixed(2)} km`;
+            unsubOdometro = laEscutarOdometro(fleet[idx].id, function (val) {
+                document.getElementById('car-odo').innerText = `OdÃ´metro: ${(val || 0).toFixed(2)} km`;
             });
             atualizarHintVeiculo();
             iniciarEscutaRevisaoVeiculo();
@@ -472,13 +458,13 @@
         }
 
         function pararEscutaRevisaoVeiculo() {
-            if (handlerRevisaoManut && revisaoCarIdAtual) {
-                db.ref('vehicle_maintenance/' + revisaoCarIdAtual).off('value', handlerRevisaoManut);
-                handlerRevisaoManut = null;
+            if (unsubRevisaoManut) {
+                unsubRevisaoManut();
+                unsubRevisaoManut = null;
             }
-            if (handlerRevisaoIssues) {
-                db.ref('vehicle_issues').off('value', handlerRevisaoIssues);
-                handlerRevisaoIssues = null;
+            if (unsubRevisaoIssues) {
+                unsubRevisaoIssues();
+                unsubRevisaoIssues = null;
             }
             revisaoCarIdAtual = null;
         }
@@ -495,17 +481,15 @@
             pararEscutaRevisaoVeiculo();
             revisaoCarIdAtual = carId;
 
-            handlerRevisaoManut = function (snap) {
-                revisaoManutCache = snap.val() || {};
+            unsubRevisaoManut = laEscutarManutencaoVeiculo(carId, function (val) {
+                revisaoManutCache = val || {};
                 renderizarHistoricoRevisao(carId);
-            };
-            db.ref('vehicle_maintenance/' + carId).on('value', handlerRevisaoManut);
+            });
 
-            handlerRevisaoIssues = function (snap) {
-                revisaoIssuesCache = snap.val() || {};
+            unsubRevisaoIssues = laEscutarIssues(function (val) {
+                revisaoIssuesCache = val || {};
                 renderizarHistoricoRevisao(carId);
-            };
-            db.ref('vehicle_issues').on('value', handlerRevisaoIssues);
+            });
         }
 
         function formatarDataRevisao(str) {

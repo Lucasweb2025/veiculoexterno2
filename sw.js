@@ -1,9 +1,12 @@
-const CACHE_NAME = 'la-controle-v75';
+const CACHE_NAME = 'la-controle-v76';
 const ASSETS = [
   './',
   './index.html',
   './painel.html',
+  './assets/js/la-backend-loader.js',
+  './assets/js/la-store.js',
   './assets/js/la-firebase.js',
+  './assets/js/la-supabase.js',
   './assets/js/utils.js',
   './assets/js/constants.js',
   './assets/js/state.js',
@@ -43,6 +46,10 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
   if (url.hostname.includes('firebaseio.com') || url.hostname.includes('googleapis.com')) {
+    return;
+  }
+
+  if (url.hostname.includes('supabase.co')) {
     return;
   }
 

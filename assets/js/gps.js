@@ -298,7 +298,7 @@ async function aquecerGpsNoMapa() {
 }
 
 function publicarPosicaoAtualNoFirebase(carId, pos) {
-    laDb().ref('vehicles/' + carId + '/last_pos').set({
+    laSetVehicleLastPos(carId, {
         lat: pos[0],
         lng: pos[1],
         driver: driver,

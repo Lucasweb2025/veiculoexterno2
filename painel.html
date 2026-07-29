@@ -6,10 +6,9 @@
     <meta name="theme-color" content="#1a1a1a">
     <title>L.A. Controle - Painel</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="assets/js/la-firebase.js"></script>
+    <script src="la-config.js"></script>
+    <script src="assets/js/la-backend-loader.js"></script>
+    <script src="assets/js/la-store.js"></script>
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/gestor-auth.js"></script>
 
@@ -147,13 +146,12 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        const db = laDb();
+        let unsubTrips = null;
+        let unsubIssues = null;
+        let unsubManut = null;
         let map, polyline;
         const tripCache = {};
         const tripNames = {};
-        let handlerTrips = null;
-        let handlerIssues = null;
-        let handlerManut = null;
         let tripsAll = {};
         let issuesAll = {};
         let manutAll = {};
@@ -354,18 +352,17 @@
         }
 
         function iniciarEscutaManutencoes() {
-            if (handlerManut) return;
-            handlerManut = function (snapshot) {
-                manutAll = snapshot.val() || {};
+            if (unsubManut) return;
+            unsubManut = laEscutarManutencoesPainel(function (val) {
+                manutAll = val || {};
                 renderizarListaManutencoes();
-            };
-            db.ref('vehicle_maintenance').on('value', handlerManut);
+            });
         }
 
         function pararEscutaManutencoes() {
-            if (!handlerManut) return;
-            db.ref('vehicle_maintenance').off('value', handlerManut);
-            handlerManut = null;
+            if (!unsubManut) return;
+            unsubManut();
+            unsubManut = null;
         }
 
         async function salvarManutencaoPainel() {
@@ -448,25 +445,24 @@
         async function marcarIssueResolvido(issueId) {
             if (!issueId) return;
             try {
-                await db.ref('vehicle_issues/' + issueId + '/status').set('resolvido');
+                await laResolverIssue(issueId);
             } catch (e) {
                 alert('NÃ£o foi possÃ­vel atualizar. Tente de novo.');
             }
         }
 
         function iniciarEscutaIssues() {
-            if (handlerIssues) return;
-            handlerIssues = function (snapshot) {
-                issuesAll = snapshot.val() || {};
+            if (unsubIssues) return;
+            unsubIssues = laEscutarIssues(function (val) {
+                issuesAll = val || {};
                 renderizarListaAlertas();
-            };
-            db.ref('vehicle_issues').on('value', handlerIssues);
+            });
         }
 
         function pararEscutaIssues() {
-            if (!handlerIssues) return;
-            db.ref('vehicle_issues').off('value', handlerIssues);
-            handlerIssues = null;
+            if (!unsubIssues) return;
+            unsubIssues();
+            unsubIssues = null;
         }
 
         function renderizarListaViagens() {
@@ -585,19 +581,18 @@
         }
 
         function iniciarEscutaTrips() {
-            if (handlerTrips) return;
-            handlerTrips = function (snapshot) {
-                tripsAll = snapshot.val() || {};
+            if (unsubTrips) return;
+            unsubTrips = laEscutarTrips(function (val) {
+                tripsAll = val || {};
                 atualizarOpcoesFiltro();
                 renderizarListaViagens();
-            };
-            db.ref('trips').on('value', handlerTrips);
+            });
         }
 
         function pararEscutaTrips() {
-            if (!handlerTrips) return;
-            db.ref('trips').off('value', handlerTrips);
-            handlerTrips = null;
+            if (!unsubTrips) return;
+            unsubTrips();
+            unsubTrips = null;
         }
 
         function abrirMapaPorId(tripId) {

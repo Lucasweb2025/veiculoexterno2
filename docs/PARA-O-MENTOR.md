@@ -7,7 +7,8 @@ Documento de entrega para o mentor / equipe de plataforma L.A.
 | **App** | https://lucasweb2025.github.io/veiculoexterno2/ |
 | **Painel** | https://lucasweb2025.github.io/veiculoexterno2/painel.html |
 | **Código** | [github.com/Lucasweb2025/veiculoexterno2](https://github.com/Lucasweb2025/veiculoexterno2) |
-| **Firebase** | projeto `la-controle` |
+| **Firebase** | projeto `la-controle` (produção atual) |
+| **Supabase** | `https://ccysxafhvgqrjlofvavp.supabase.co` (migração — ver `SUPABASE-MIGRACAO.md`) |
 | **Pasta do código** | `veiculoexterno2/` |
 
 > O app e o painel já estão prontos. A integração com a plataforma L.A. fica com a equipe de vocês — leiam os dados no Firebase ou usem o webhook opcional (`INTEGRACAO-PLATAFORMA.md`).
@@ -22,7 +23,9 @@ Sistema de controle de frota com:
 |------------|---------|--------|
 | App motorista | `index.html` | Login, escolha motorista/veículo, GPS, corrida, alertas de veículo |
 | Painel gestor | `painel.html` | Histórico, filtros, mapa da rota, alertas, export CSV |
-| Firebase compartilhado | `src/shared/firebase/la-firebase.js` → `assets/js/la-firebase.js` | Auth, perfis, persistência de viagens e alertas |
+| Firebase compartilhado | `src/shared/firebase/la-firebase.js` | Auth + RTDB (backend padrão) |
+| Supabase (opcional) | `src/shared/supabase/la-supabase.js` + `la-store.js` | Auth + Postgres + Realtime |
+| Backend loader | `src/shared/la-backend-loader.js` | Escolhe Firebase ou Supabase via `LA_CONFIG.BACKEND` |
 | Integração webhook | `la-integracao.js` | POST para plataforma L.A. ao finalizar viagem ou reportar problema |
 | Regras RTDB | `database.rules.json` | Segurança por papel (motorista / gestor / admin) |
 | Android (APK) | `la-controle-capacitor/` | Capacitor + GPS nativo |
@@ -32,10 +35,12 @@ Sistema de controle de frota com:
 ## Arquitetura (visão rápida)
 
 ```
-[App motorista / Painel]  →  Firebase Auth + Realtime Database
+[App motorista / Painel]  →  la-backend-loader → Firebase OU Supabase
          │
          └── la-integracao.js  →  POST webhook (plataforma L.A.)
 ```
+
+Backend padrão: **Firebase RTDB**. Para Supabase: `docs/SUPABASE-MIGRACAO.md`.
 
 Dados principais no Realtime Database:
 
